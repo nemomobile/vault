@@ -20,7 +20,8 @@ int main(int argc, char *argv[])
         debug::debug("w", "e");
         debug::error("error", "more info", 1);
 
-        json::read("data.json");
+        auto v = json::read("data.json");
+        debug::print(v);
     } catch(error::Error const &e) {
         qDebug() << "E:" << e.m;
     } catch (std::exception const &e) {
