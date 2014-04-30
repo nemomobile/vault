@@ -34,11 +34,41 @@ void print(A&& ...args)
 void level(Level);
 bool is_tracing_level(Level);
 
-template <Level print_level, typename ... A>
-void print_ge(A&& ...args)
+template <typename ... A>
+void print_ge(Level print_level, A&& ...args)
 {
     if (is_tracing_level(print_level))
         print(std::forward<A>(args)...);
+}
+
+template <typename ... A>
+void debug(A&& ...args)
+{
+    print_ge(Level::Debug, std::forward<A>(args)...);
+}
+
+template <typename ... A>
+void info(A&& ...args)
+{
+    print_ge(Level::Info, std::forward<A>(args)...);
+}
+
+template <typename ... A>
+void warning(A&& ...args)
+{
+    print_ge(Level::Warning, std::forward<A>(args)...);
+}
+
+template <typename ... A>
+void error(A&& ...args)
+{
+    print_ge(Level::Error, std::forward<A>(args)...);
+}
+
+template <typename ... A>
+void critical(A&& ...args)
+{
+    print_ge(Level::Critical, std::forward<A>(args)...);
 }
 
 }
