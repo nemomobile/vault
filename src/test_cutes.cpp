@@ -16,6 +16,8 @@ int main(int argc, char *argv[])
                 
             ;
         debug::print(1, map({{"w", 2}}));
+        debug::debug("w", "e");
+        debug::error("error", "more info", 1);
     } catch(error::Error const &e) {
         qDebug() << "E:" << e.m;
     } catch (std::exception const &e) {

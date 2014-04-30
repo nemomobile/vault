@@ -13,7 +13,7 @@ public:
     QVariantMap m;
 };
 
-void raise(QVariantMap const &m)
+static inline void raise(QVariantMap const &m)
 {
     throw Error(m);
 }

@@ -42,45 +42,32 @@ public:
     {
         return QFileInfo(p).symLinkTarget();
     }
-
     static inline bool isDir(QString const &p)
     {
         return QFileInfo(p).isDir();
     }
-
     static inline bool isSymLink(QString const &p)
     {
         return QFileInfo(p).isSymLink();
     }
-
     static inline bool isFile(QString const &p)
     {
         return QFileInfo(p).isFile();
+    }
+    static inline QString dirName(QString const &p)
+    {
+        return QFileInfo(p).dir().path();
     }
 
 private:
 
 };
 
-int system(QString const &cmd, QStringList const &args = QStringList())
-{
-    Process p;
-    p.start(cmd, args);
-    p.wait(-1);
-    return p.rc();
-}
+int system(QString const &cmd, QStringList const &args = QStringList());
 
-bool mkdir(QString const &path, QVariantMap const &options)
-{
-    QVariantMap err = {{"fn", "mkdir"}, {"path", path}};
-    if (path::isDir(path))
-        return false;
-    if (options.value("parent", false).toBool())
-        return system("mkdir", {"-p", path}) == 0;
-    return system("mkdir", {path}) == 0;
-}
+bool mkdir(QString const &path, QVariantMap const &options);
 
-bool mkdir(QString const &path)
+static inline bool mkdir(QString const &path)
 {
     return mkdir(path, QVariantMap());
 }
