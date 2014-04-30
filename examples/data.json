@@ -1,0 +1,6 @@
+{
+	"name": "Accounts",
+	"group": "organizer",
+	"icon": "icon-launcher-accounts",
+	"script": "/usr/share/jolla-vault/units/accounts.js"
+}

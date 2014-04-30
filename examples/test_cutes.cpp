@@ -2,6 +2,7 @@
 #include "util.hpp"
 #include "os.hpp"
 #include "subprocess.hpp"
+#include "json.hpp"
 #include <QCoreApplication>
 #include <QDebug>
 
@@ -18,6 +19,8 @@ int main(int argc, char *argv[])
         debug::print(1, map({{"w", 2}}));
         debug::debug("w", "e");
         debug::error("error", "more info", 1);
+
+        json::read("data.json");
     } catch(error::Error const &e) {
         qDebug() << "E:" << e.m;
     } catch (std::exception const &e) {

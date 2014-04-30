@@ -15,3 +15,4 @@ self_test.xml
 /src/*.so
 tests/Testing
 *automoc.cpp
+examples/use_cutes
