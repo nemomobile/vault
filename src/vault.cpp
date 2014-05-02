@@ -48,14 +48,10 @@ bool Vault::init()
 bool Vault::writeFile(const QString &path, const QString &content)
 {
     QFile file(m_path + "/" + path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-        return false;
+    if (!content.endsWith('\n')) {
+        return os::write_file(m_path + "/" + path, content + '\n');
     }
-
-    QTextStream stream(&file);
-    stream << content << '\n';
-    file.close();
-    return true;
+    return os::write_file(m_path + "/" + path, content);
 }
 
 bool Vault::setState(const QString &state)
