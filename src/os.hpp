@@ -80,7 +80,7 @@ static inline QByteArray read_file(QString const &fname)
     return f.readAll();
 }
 
-static inline size_t write_file(QString const &fname, QByteArray const &data)
+static inline ssize_t write_file(QString const &fname, QByteArray const &data)
 {
     QFile f(fname);
     if (!f.open(QFile::WriteOnly))
@@ -89,7 +89,7 @@ static inline size_t write_file(QString const &fname, QByteArray const &data)
     return f.write(data);
 }
 
-static inline size_t write_file(QString const &fname, QString const &data)
+static inline ssize_t write_file(QString const &fname, QString const &data)
 {
     return write_file(fname, data.toUtf8());
 }

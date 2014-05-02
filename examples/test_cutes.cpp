@@ -21,7 +21,10 @@ int main(int argc, char *argv[])
         debug::error("error", "more info", 1);
 
         auto v = json::read("data.json");
-        debug::print(v);
+        debug::print(v, get(v, "name"), get(v, "array", 0));
+        // is movable
+        auto v2 = std::move(v);
+        debug::print(v2);
     } catch(error::Error const &e) {
         qDebug() << "E:" << e.m;
     } catch (std::exception const &e) {
