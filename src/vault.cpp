@@ -18,13 +18,17 @@ Vault::Vault(const QString &path)
 {
 }
 
-bool Vault::init()
+bool Vault::init(const QVariantMap &config)
 {
     if (!m_vcs.init()) {
         return false;
     }
 
     m_vcs.setConfigValue("status.showUntrackedFiles", "all");
+    for (auto it = config.begin(); it != config.end(); ++it) {
+        m_vcs.setConfigValue(it.key(), it.value().toString());
+    }
+
     if (!writeFile(".git/info/exclude", ".vault.*")) {
         return false;
     }

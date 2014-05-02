@@ -11,7 +11,7 @@ class Vault
 public:
     Vault(const QString &path);
 
-    bool init();
+    bool init(const QVariantMap &config = QVariantMap());
 
     bool writeFile(const QString &file, const QString &content);
 
