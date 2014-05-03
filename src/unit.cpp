@@ -60,14 +60,11 @@ public:
         , home(os::path::canonical(str(options["home"])))
     {}
 
-    void execute()
-    {
-        QString vault_bin_dir = str(options["bin_dir"]),
-            vault_data_dir = str(options["data_dir"]),
-            home = os::path::canonical(str(options["home"]));
-    }
-
+    void execute();
 private:
+
+    typedef std::function<void (QString const &, std::unique_ptr<list_type>
+                                , map_type const &)> action_type;
 
     class Links
     {
@@ -95,7 +92,6 @@ private:
         map_type data;
         QString root_dir;
     };
-
 
     void to_vault(QString const &data_type
                   , std::unique_ptr<list_type> paths_ptr
@@ -207,7 +203,7 @@ void Operation::to_vault(QString const &data_type
         auto tgt_path = os::path::relative(os::path::canonical(tgt), home);
 
         map_type link_info;
-        insert(link_info, v);
+        link_info.unite(v);
         link_info["target"] = tgt;
         link_info["target_path"] = tgt_path;
         links.add(link_info);
@@ -384,6 +380,74 @@ void Operation::from_vault(QString const &data_type
         fn();
     }
 }
+
+void Operation::execute()
+{
+    QString vault_bin_dir = str(options["bin_dir"]),
+        vault_data_dir = str(options["data_dir"]);
+        
+    action_type action;
+
+    if (!os::path::isDir(home))
+        error::raise({{"msg", "Home dir doesn't exist"}, {"dir", home}});
+
+    auto action_name = str(options["action"]);
+    using namespace std::placeholders;
+    if (action_name == "export") {
+        action = std::bind(&Operation::to_vault, this, _1, _2, _3);
+    } else if (action_name == "import") {
+        action = std::bind(&Operation::from_vault, this, _1, _2, _3);
+    } else {
+        error::raise({{ "msg", "Unknown action"}, {"action", options["action"]}});
+    }
+
+    auto get_home_path = [this](QVariant const &item) {
+        map_type res;
+        if (hasType(item, QMetaType::QString)) {
+            res["path"] = str(item);
+        } else if (hasType(item, QMetaType::QVariantMap)) {
+            res.unite(item.toMap());
+        } else {
+            error::raise({{"msg", "Unexpected path type"}, {"item", item}});
+        }
+
+        auto path = str(res["path"]);
+        if (path.isEmpty())
+            error::raise({{"msg", "Invalid data(path)"}, {"item", item}});
+
+        res["full_path"] = os::path::join(home, path);
+        res["root_path"] = home;
+        return res;
+    };
+
+    auto process_home_path = [&action, get_home_path](map_type const &location) {
+        for (auto it = location.begin(); it != location.end(); ++it) {
+            auto const &name = it.key();
+            auto const &items = it.value();
+            if (name == "options")
+                continue; // skip options
+            auto data_type = name;
+            auto paths = (hasType(items, QMetaType::QString)
+                          ? list_type({get_home_path(items)})
+                          : util::map<map_type>(items.toList(), get_home_path));
+            action(data_type, box(std::move(paths)), location);
+        };
+    };
+
+    for (auto it = context.begin(); it != context.end(); ++it) {
+        auto const &name = it.key();
+        auto const &value = it.value();
+        if (name == "options")
+            continue; // skip options
+
+        if (name == "home") {
+            process_home_path(map(value));
+        } else {
+            error::raise({{"msg", "Unknown context item"}, {"item", name}});
+        }
+    };
+
+}        
 
 
 }}
