@@ -106,6 +106,21 @@ inline ssize_t write_file(QString const &fname, char const *data)
     return write_file(fname, QString(data).toUtf8());
 }
 
+inline int symlink(QString const &tgt, QString const &link)
+{
+    return system("ln", {"-s", tgt, link});
+}
+
+inline int rmtree(QString const &path)
+{
+    return system("rm", {"-rf", path});
+}
+
+inline int unlink(QString const &what)
+{
+    return system("unlink", {what});
+}
+
 }
 
 int cp(QString const &src, QString const &dst
@@ -114,6 +129,8 @@ int update(QString const &src, QString const &dst
            , QVariantMap &&options = QVariantMap());
 int update_tree(QString const &src, QString const &dst
                 , QVariantMap &&options = QVariantMap());
+int cptree(QString const &src, QString const &dst
+           , QVariantMap &&options = QVariantMap());
 
 }
 

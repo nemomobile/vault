@@ -50,6 +50,11 @@ QVariant get(QVariantMap const &m, QString const &k1, QString const &k2, A&& ...
     return get(v.toMap(), k2, std::forward<A>(args)...);
 }
 
+static inline bool is(QVariant const &v)
+{
+    return v.toBool();
+}
+
 template <typename T>
 std::unique_ptr<T> box(T &&v)
 {

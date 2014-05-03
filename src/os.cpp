@@ -85,4 +85,11 @@ int cp(QString const &src, QString const &dst, QVariantMap &&options)
     return system("cp", args);
 }
 
+int cptree(QString const &src, QString const &dst, QVariantMap &&options)
+{
+    options["recursive"] = true;
+    options["force"] = true;
+    return cp(src, dst, std::move(options));
+}
+
 }
