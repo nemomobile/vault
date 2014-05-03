@@ -1,7 +1,8 @@
 #ifndef _CUTES_ERROR_HPP_
 #define _CUTES_ERROR_HPP_
 
-#include "util.hpp"
+#include <exception>
+#include <QVariantMap>
 
 namespace error {
 
@@ -23,7 +24,7 @@ void raise(T const &m1, T2 const &m2, A && ...args)
 {
     QVariantMap x = m1;
     QVariantMap y = m2;
-    insert(x, y);
+    x.unite(y);
     raise(x, std::forward<A>(args)...);
 }
 
