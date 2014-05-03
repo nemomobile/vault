@@ -18,12 +18,13 @@ static inline void raise(QVariantMap const &m)
     throw Error(m);
 }
 
-template <typename ... A>
-void raise(QVariantMap const &m1, QVariantMap const &m2, A && ...args)
+template <typename T, typename T2, typename ... A>
+void raise(T const &m1, T2 const &m2, A && ...args)
 {
-    QVariantMap m(m1);
-    insert(m, m2);
-    raise(m);
+    QVariantMap x = m1;
+    QVariantMap y = m2;
+    insert(x, y);
+    raise(x, std::forward<A>(args)...);
 }
 
 }

@@ -2,6 +2,7 @@
 #define _CUTES_OS_HPP_
 
 #include "error.hpp"
+#include "sys.hpp"
 #include "subprocess.hpp"
 
 #include <QFileInfo>
@@ -59,6 +60,10 @@ public:
         return QFileInfo(p).dir().path();
     }
 
+    static QStringList split(QString const &p);
+
+    static bool isDescendent(QString const &p, QString const &other);
+
 private:
 
 };
@@ -72,7 +77,9 @@ static inline bool mkdir(QString const &path)
     return mkdir(path, QVariantMap());
 }
 
-static inline QByteArray read_file(QString const &fname)
+namespace {
+
+inline QByteArray read_file(QString const &fname)
 {
     QFile f(fname);
     if (!f.open(QFile::ReadOnly))
@@ -80,7 +87,7 @@ static inline QByteArray read_file(QString const &fname)
     return f.readAll();
 }
 
-static inline ssize_t write_file(QString const &fname, QByteArray const &data)
+inline ssize_t write_file(QString const &fname, QByteArray const &data)
 {
     QFile f(fname);
     if (!f.open(QFile::WriteOnly))
@@ -89,10 +96,24 @@ static inline ssize_t write_file(QString const &fname, QByteArray const &data)
     return f.write(data);
 }
 
-static inline ssize_t write_file(QString const &fname, QString const &data)
+inline ssize_t write_file(QString const &fname, QString const &data)
 {
     return write_file(fname, data.toUtf8());
 }
+
+inline ssize_t write_file(QString const &fname, char const *data)
+{
+    return write_file(fname, QString(data).toUtf8());
+}
+
+}
+
+int cp(QString const &src, QString const &dst
+       , QVariantMap &&options = QVariantMap());
+int update(QString const &src, QString const &dst
+           , QVariantMap &&options = QVariantMap());
+int update_tree(QString const &src, QString const &dst
+                , QVariantMap &&options = QVariantMap());
 
 }
 
