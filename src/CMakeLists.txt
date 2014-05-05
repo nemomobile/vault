@@ -16,6 +16,9 @@ add_library(cutespp debug.cpp os.cpp json.cpp unit.cpp sys.cpp)
 qt5_use_modules(cutespp Core)
 target_link_libraries(cutespp ${COR_LIBRARIES})
 
-add_executable(vault main.cpp vault.cpp)
+add_library(vault SHARED vault.cpp)
 qt5_use_modules(vault Core)
 target_link_libraries(vault cutespp libgit)
+
+add_executable(vault-cli vault-cli.cpp)
+target_link_libraries(vault-cli vault)
