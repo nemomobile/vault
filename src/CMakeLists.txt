@@ -11,7 +11,7 @@ link_directories(
 find_package(Qt5Core REQUIRED)
 set(CMAKE_AUTOMOC TRUE)
 
-add_library(cutespp debug.cpp os.cpp json.cpp unit.cpp sys.cpp)
+add_library(cutespp debug.cpp os.cpp json.cpp unit.cpp sys.cpp subprocess.cpp)
 qt5_use_modules(cutespp Core)
 target_link_libraries(cutespp ${COR_LIBRARIES})
 

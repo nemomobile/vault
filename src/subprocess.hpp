@@ -4,39 +4,25 @@
 #include <QProcess>
 
 namespace subprocess {
-class Process
+
+class Process : public QObject
 {
+    Q_OBJECT
 public:
     Process()
-        : is_finished(false)
+        : isRunning_(false)
+        , isError_(false)
     {}
 
-    void start(QString const &cmd, QStringList const &args)
-    {
-        ps.start(cmd, args);
-    }
+    void start(QString const &, QStringList const &);
 
-    bool wait(int timeout)
-    {
-        return (ps.state() == QProcess::NotRunning)
-            || ps.waitForFinished(timeout)
-            || (ps.state() == QProcess::NotRunning);
-    }
+    bool wait(int timeout);
+    bool is_error() const;
+    QString errorInfo() const;
 
-    bool is_error()
+    int rc() const
     {
-        auto e = ps.error();
-        auto status = ps.exitStatus();
-        return (status == QProcess::NormalExit
-                && (e == QProcess::UnknownError
-                    || (is_finished && e == QProcess::Timedout))
-                ? false
-                : true);
-    }
-
-    int rc()
-    {
-        return is_error() ? -1 : ps.exitCode();
+        return is_error() ? -1111 : ps.exitCode();
     }
 
     qint64 write(QString const &data)
@@ -44,21 +30,34 @@ public:
         return ps.write(data.toUtf8());
     }
 
-    QByteArray stdout()
+    QByteArray stdout() const
     {
         return ps.readAllStandardOutput();
     }
 
-    QByteArray stderr()
+    QByteArray stderr() const
     {
         return ps.readAllStandardError();
     }
 
+    Q_PID pid() const
+    {
+        return ps.pid();
+    }
+
 private:
 
-    QProcess ps;
-    bool is_finished;
+    mutable QProcess ps;
+    bool isRunning_;
+    bool isError_;
+
+private slots:
+    void onError(QProcess::ProcessError);
+    void onFinished(int, QProcess::ExitStatus);
 };
+
+QByteArray check_output(QString const &cmd, QStringList const &args);
+
 
 }
 #endif // _CUTES_SUBPROCESS_HPP_
