@@ -30,6 +30,10 @@ int main(int argc, char **argv)
         qDebug()<<vault.init(config);
     } else if (action == "backup" || action == "export") {
         vault.backup(parser.value(homeOption), QStringList(), "");
+    } else if (action == "list-snapshots") {
+        for (const Snapshot &snapshot: vault.snapshots()) {
+            qDebug() << snapshot.tag();
+        }
     }
 
 

@@ -8,6 +8,17 @@
 
 #include <libgit/repo.h>
 
+class Snapshot
+{
+public:
+    Snapshot(const LibGit::Tag &commit);
+
+    inline LibGit::Tag tag() const { return m_tag; }
+
+private:
+    LibGit::Tag m_tag;
+};
+
 class Vault
 {
 public:
@@ -21,7 +32,9 @@ public:
 
     bool init(const QVariantMap &config = QVariantMap());
     Result backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback = nullptr);
-    Result restore(const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
+    Result restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
+
+    QList<Snapshot> snapshots() const;
 
     bool writeFile(const QString &file, const QString &content);
 

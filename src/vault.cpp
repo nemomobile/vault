@@ -16,6 +16,14 @@ static const struct {
     int repository;
 } version = { 2, 2 };
 
+
+Snapshot::Snapshot(const LibGit::Tag &tag)
+        : m_tag(tag)
+{
+}
+
+
+
 Vault::Vault(const QString &path)
      : m_path(path)
      , m_vcs(path)
@@ -94,7 +102,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     return res;
 }
 
-Vault::Result Vault::restore(const QString &home, const QStringList &units, const ProgressCallback &callback)
+Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
     Result res;
     res.failedUnits << units;
@@ -108,6 +116,7 @@ Vault::Result Vault::restore(const QString &home, const QStringList &units, cons
         qDebug() << "Progress" << name << status;
     };
 
+    m_vcs.checkout(snapshot.tag());
     if (!units.isEmpty()) {
         for (const QString &unit: units) {
             if (restoreUnit(unit, progress)) {
@@ -120,6 +129,17 @@ Vault::Result Vault::restore(const QString &home, const QStringList &units, cons
     }
 
     return res;
+}
+
+QList<Snapshot> Vault::snapshots() const
+{
+    QList<Snapshot> list;
+    for (const LibGit::Tag &tag: m_vcs.tags()) {
+        if (!tag.name().isEmpty() && tag.name().startsWith('>')) {
+            list << Snapshot(tag);
+        }
+    }
+    return list;
 }
 
 bool Vault::writeFile(const QString &path, const QString &content)
