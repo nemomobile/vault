@@ -11,7 +11,7 @@
 class Vault
 {
 public:
-    struct BackupResult {
+    struct Result {
         QStringList succededUnits;
         QStringList failedUnits;
     };
@@ -20,13 +20,15 @@ public:
     Vault(const QString &path);
 
     bool init(const QVariantMap &config = QVariantMap());
-    BackupResult backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback = nullptr);
+    Result backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback = nullptr);
+    Result restore(const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
 
     bool writeFile(const QString &file, const QString &content);
 
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &unit, const ProgressCallback &callback);
+    bool restoreUnit(const QString &unit, const ProgressCallback &callback);
     void tagSnapshot(const QString &msg);
 
     QString m_path;

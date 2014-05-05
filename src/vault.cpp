@@ -53,9 +53,9 @@ bool Vault::init(const QVariantMap &config)
     return setState("new");
 }
 
-Vault::BackupResult Vault::backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback)
+Vault::Result Vault::backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback)
 {
-    BackupResult res;
+    Result res;
     res.failedUnits << units;
 
     if (!os::path::isDir(home)) {
@@ -94,6 +94,34 @@ Vault::BackupResult Vault::backup(const QString &home, const QStringList &units,
     return res;
 }
 
+Vault::Result Vault::restore(const QString &home, const QStringList &units, const ProgressCallback &callback)
+{
+    Result res;
+    res.failedUnits << units;
+
+    if (!os::path::isDir(home)) {
+        qWarning("Home is not a dir: %s", qPrintable(home));
+        return res;
+    }
+
+    ProgressCallback progress = callback ? callback : [](const QString &name, const QString &status) {
+        qDebug() << "Progress" << name << status;
+    };
+
+    if (!units.isEmpty()) {
+        for (const QString &unit: units) {
+            if (restoreUnit(unit, progress)) {
+                res.failedUnits.removeOne(unit);
+                res.succededUnits << unit;
+            }
+        }
+    } else {
+        //TODO
+    }
+
+    return res;
+}
+
 bool Vault::writeFile(const QString &path, const QString &content)
 {
     QFile file(m_path + "/" + path);
@@ -122,6 +150,19 @@ bool Vault::backupUnit(const QString &unit, const ProgressCallback &callback)
     callback(unit, "fail");
     m_vcs.clean(LibGit::CleanOptions::Force | LibGit::CleanOptions::RemoveDirectories | LibGit::CleanOptions::IgnoreIgnores, name);
     m_vcs.reset(LibGit::ResetOptions::Hard, head.sha());
+    return false;
+}
+
+bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
+{
+    callback(unit, "begin");
+    bool succeded = true; // TODO
+    if (succeded) {
+        callback(unit, "ok");
+        return true;
+    }
+
+    callback(unit, "fail");
     return false;
 }
 
