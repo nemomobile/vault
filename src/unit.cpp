@@ -1,10 +1,6 @@
-#include "os.hpp"
-#include "util.hpp"
+#include "unit.hpp"
 #include "debug.hpp"
-#include "json.hpp"
-#include "vault_config.hpp"
 
-#include <cor/options.hpp>
 #include <QString>
 
 namespace vault { namespace unit {
@@ -12,9 +8,16 @@ namespace vault { namespace unit {
 static const unsigned current_version = 1;
 static const QString default_preserve = "mode,ownership,timestamps";
 
-// bool getopt()
-// {
-// }
+namespace {
+QVariantMap options_info
+= {{"data_dir", map({{"short", "d"}, {"long", "dir"}
+                , {"required", true}, {"has_param", true}})}
+   , {"bin_dir", map({{"short", "b"}, {"long", "bin-dir"}
+                , {"required", true}, {"has_param", true}})}
+   , {"home", map({{"short", "H"}, {"long", "home-dir"}
+                , {"required", true}, {"has_param", true}})}
+   , {"action", map({{"short", "a"}, {"long", "action"}
+                , {"required", true}, {"has_param", true}})}};
 
 class Config
 {
@@ -22,6 +25,7 @@ public:
     void add(QString const &name, QString const &script);
     void remove(QString const &name);
 };
+
 
 typedef QVariantMap map_type;
 typedef QList<QVariantMap> list_type;
@@ -45,19 +49,14 @@ private:
     QString fname;
 };
 
-
-
-
 class Operation
 {
-    typedef cor::OptParse<std::string> option_parser_type;
-
 public:
-    Operation(map_type &&o, map_type const &&c)
+    Operation(std::unique_ptr<sys::GetOpt> o, map_type const &c)
         : options(std::move(o))
-        , context(std::move(c))
-        , vault_dir({{"bin", options["bin_dir"]}, {"data", options["data_dir"]}})
-        , home(os::path::canonical(str(options["home"])))
+        , context(c)
+        , vault_dir({{"bin", options->value("bin_dir")}, {"data", options->value("data_dir")}})
+        , home(os::path::canonical(str(options->value("home"))))
     {}
 
     void execute();
@@ -120,18 +119,10 @@ private:
         return Version(root);
     }
 
-    QString get_root_vault_dir(QString const &data_type) {
-        auto res = str(vault_dir[data_type]);
-        if (res.isEmpty())
-            error::raise({{"msg", "Unknown data type is unknown"},
-                         {"data_type", data_type}});
-        if (!os::path::isDir(res))
-            error::raise({{"msg", "Vault dir doesn't exist?"}, {"dir", res }});
-        return res;
-    }
+    QString get_root_vault_dir(QString const &data_type);
 
-    map_type options;
-    map_type context;
+    std::unique_ptr<sys::GetOpt> options;
+    map_type const &context;
     map_type vault_dir;
     QString home;
 };
@@ -150,6 +141,16 @@ void create_dst_dirs(map_type const &item)
     }
 }
 
+QString Operation::get_root_vault_dir(QString const &data_type)
+{
+    auto res = str(vault_dir[data_type]);
+    if (res.isEmpty())
+        error::raise({{"msg", "Unknown data type is unknown"},
+                    {"data_type", data_type}});
+    if (!os::path::isDir(res))
+        error::raise({{"msg", "Vault dir doesn't exist?"}, {"dir", res }});
+    return res;
+}
 
 void Operation::to_vault(QString const &data_type
                          , std::unique_ptr<list_type> paths_ptr
@@ -383,22 +384,22 @@ void Operation::from_vault(QString const &data_type
 
 void Operation::execute()
 {
-    QString vault_bin_dir = str(options["bin_dir"]),
-        vault_data_dir = str(options["data_dir"]);
+    QString vault_bin_dir = str(options->value("bin_dir")),
+        vault_data_dir = str(options->value("data_dir"));
         
     action_type action;
 
     if (!os::path::isDir(home))
         error::raise({{"msg", "Home dir doesn't exist"}, {"dir", home}});
 
-    auto action_name = str(options["action"]);
+    auto action_name = options->value("action");
     using namespace std::placeholders;
     if (action_name == "export") {
         action = std::bind(&Operation::to_vault, this, _1, _2, _3);
     } else if (action_name == "import") {
         action = std::bind(&Operation::from_vault, this, _1, _2, _3);
     } else {
-        error::raise({{ "msg", "Unknown action"}, {"action", options["action"]}});
+        error::raise({{ "msg", "Unknown action"}, {"action", options->value("action")}});
     }
 
     auto get_home_path = [this](QVariant const &item) {
@@ -449,5 +450,19 @@ void Operation::execute()
 
 }        
 
+} // namespace
 
-}}
+std::unique_ptr<sys::GetOpt> getopt()
+{
+    return sys::getopt(options_info);
+}
+
+int execute(std::unique_ptr<sys::GetOpt>, QVariantMap const &info)
+{
+    Operation op(getopt(), info);
+    op.execute();
+    // TODO catch and return
+    return 0;
+}
+
+}} // namespace vault::unit
