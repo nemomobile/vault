@@ -78,19 +78,26 @@ std::unique_ptr<GetOpt> getopt(QVariantMap const &info)
                     , QString const &name
                     , QVariant const &v) {
         auto info = v.toMap();
-        QCommandLineOption o(QStringList() << str(info["short"])
-                             << str(info["long"])
-                             , name, name);
-        parser.addOption(o);
+        if (info["has_param"].toBool()) {
+            QCommandLineOption o(QStringList() << str(info["short"])
+                                 << str(info["long"])
+                                 , name, name);
+            parser.addOption(o);
+        } else {
+            QCommandLineOption o(QStringList() << str(info["short"])
+                                 << str(info["long"]), name);
+            parser.addOption(o);
+        }
     };
     for (auto it = info.begin(); it != info.end(); ++it) {
         add_option(parser, it.key(), it.value());
     }
     parser.process(*QCoreApplication::instance());
     for (auto it = info.begin(); it != info.end(); ++it) {
-        if (!parser.isSet(it.key()))
+        auto name = it.key();
+        if (!parser.isSet(name))
             error::raise({{"msg", "Required option is not set"}
-                    , {"option", it.key()}});
+                    , {"option", name}});
     }
     return std::move(res);
 }
