@@ -1,5 +1,8 @@
 #include "unit.hpp"
 #include "util.hpp"
+#include "error.hpp"
+#include <QCoreApplication>
+#include <QDebug>
 
 namespace {
 QVariantMap info = {
@@ -19,9 +22,16 @@ QVariantMap info = {
 };
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    using namespace vault::unit;
-    execute(getopt(), info);
+    try {
+        QCoreApplication app(argc, argv);
+        using namespace vault::unit;
+        execute(getopt(), info);
+    } catch (error::Error const &e) {
+        qDebug() << e;
+    } catch (std::exception const &e) {
+        qDebug() << e.what();
+    }
     return 0;
 }
