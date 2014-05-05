@@ -4,12 +4,20 @@ include_directories(${TUT_INCLUDES})
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 enable_testing()
 
+find_package(Qt5Core REQUIRED)
+set(CMAKE_AUTOMOC TRUE)
+
 set(UNIT_TESTS unit)
+
+add_executable(unit_all unit_all.cpp)
+target_link_libraries(unit_all cutespp)
+qt5_use_modules(unit_all Core)
 
 MACRO(UNIT_TEST _name)
   set(_exe_name test_${_name})
   add_executable(${_exe_name} EXCLUDE_FROM_ALL main.cpp ${_name}.cpp)
-  target_link_libraries(${_exe_name} cor ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(${_exe_name} cutespp cor)
+  qt5_use_modules(${_exe_name} Core)
   add_test(${_exe_name} ${_exe_name})
   add_dependencies(check ${_exe_name})
 ENDMACRO(UNIT_TEST)

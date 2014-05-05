@@ -37,6 +37,11 @@ inline QVariantMap map(std::initializer_list<std::pair<QString, QVariant> > data
     return QVariantMap(data);
 }
 
+inline QVariantList list(std::initializer_list<QVariant> data)
+{
+    return QVariantList(data);
+}
+
 inline QVariantMap map(QVariant const &v, bool check_type = true)
 {
     if (check_type && !hasType(v, QMetaType::QVariantMap))
