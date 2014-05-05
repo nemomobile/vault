@@ -19,6 +19,16 @@ inline QString str(QVariant const &v)
     return v.toString();
 }
 
+inline QString str(QByteArray const &v)
+{
+    return QString::fromUtf8(v);
+}
+
+inline QString str(int v)
+{
+    return QString::number(v);
+}
+
 inline bool is(QVariant const &v)
 {
     return v.toBool();
