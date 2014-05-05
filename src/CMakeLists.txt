@@ -1,5 +1,3 @@
-find_package(PkgConfig REQUIRED)
-
 pkg_check_modules(COR cor REQUIRED)
 include_directories(
   ${COR_INCLUDE_DIRS}
