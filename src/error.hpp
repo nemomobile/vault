@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <QVariantMap>
+#include <QDebug>
 
 namespace error {
 
@@ -10,9 +11,22 @@ class Error : public std::exception
 {
 public:
     Error(QVariantMap const &from) : m(from) {}
-    virtual ~Error() noexcept(true) {};
+    virtual ~Error() noexcept(true) {}
+    virtual const char* what() const noexcept(true)
+    {
+        QString s;
+        QDebug(&s) << m;
+        return s.toUtf8();
+    }
+
     QVariantMap m;
 };
+
+static inline QDebug operator << (QDebug dst, error::Error const &src)
+{
+    dst << src.m;
+    return dst;
+}
 
 static inline void raise(QVariantMap const &m)
 {
