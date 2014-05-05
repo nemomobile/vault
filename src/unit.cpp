@@ -53,7 +53,7 @@ class Operation
     typedef cor::OptParse<std::string> option_parser_type;
 
 public:
-    Operation(map_type &&o , map_type const &&c)
+    Operation(map_type &&o, map_type const &&c)
         : options(std::move(o))
         , context(std::move(c))
         , vault_dir({{"bin", options["bin_dir"]}, {"data", options["data_dir"]}})
@@ -184,7 +184,7 @@ void Operation::to_vault(QString const &data_type
         fn(src, dst, std::move(options));
     };
 
-    auto process_symlinks = [this, &links](map_type &v) {
+    auto process_symlink = [this, &links](map_type &v) {
         if (!os::path::isSymLink(str(get(v, "full_path"))))
             return;
 
@@ -229,7 +229,7 @@ void Operation::to_vault(QString const &data_type
         return res;
     };
         
-    std::for_each(paths.begin(), paths.end(), process_symlinks);
+    std::for_each(paths.begin(), paths.end(), process_symlink);
     list_type existing_paths;
     for (auto it = paths.begin(); it != paths.end(); ++it) {
         if (is_src_exists(*it))
