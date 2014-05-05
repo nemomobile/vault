@@ -1,6 +1,7 @@
 #include "debug.hpp"
 #include <mutex>
 #include <string>
+#include <iostream>
 
 namespace debug {
 
@@ -19,7 +20,7 @@ void init()
         auto c = ::getenv("CUTES_DEBUG");
         if (c) {
             std::string name(c);
-            current_level = std::stoi(name);
+            current_level = name.size() ? std::stoi(name) : (int)Level::Critical;
         }
         is_init = true;
     }
@@ -35,11 +36,13 @@ QDebug stream()
 
 void level(Level level)
 {
+    init();
     current_level = static_cast<int>(level);
 }
 
 bool is_tracing_level(Level level)
 {
+    init();
     return static_cast<int>(level) >= current_level;
 }
 

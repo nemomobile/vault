@@ -9,7 +9,7 @@
 
 namespace debug {
 
-enum class Level { Debug, Info, Warning, Error, Critical };
+enum class Level { Debug = 1, Info, Warning, Error, Critical };
 
 QDebug stream();
 
