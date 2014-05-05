@@ -10,11 +10,11 @@ static const QString default_preserve = "mode,ownership,timestamps";
 
 namespace {
 QVariantMap options_info
-= {{"data_dir", map({{"short", "d"}, {"long", "dir"}
+= {{"dir", map({{"short", "d"}, {"long", "dir"}
                 , {"required", true}, {"has_param", true}})}
-   , {"bin_dir", map({{"short", "b"}, {"long", "bin-dir"}
+   , {"bin-dir", map({{"short", "b"}, {"long", "bin-dir"}
                 , {"required", true}, {"has_param", true}})}
-   , {"home", map({{"short", "H"}, {"long", "home-dir"}
+   , {"home-dir", map({{"short", "H"}, {"long", "home-dir"}
                 , {"required", true}, {"has_param", true}})}
    , {"action", map({{"short", "a"}, {"long", "action"}
                 , {"required", true}, {"has_param", true}})}};
@@ -55,9 +55,10 @@ public:
     Operation(std::unique_ptr<sys::GetOpt> o, map_type const &c)
         : options(std::move(o))
         , context(c)
-        , vault_dir({{"bin", options->value("bin_dir")}, {"data", options->value("data_dir")}})
-        , home(os::path::canonical(str(options->value("home"))))
-    {}
+        , vault_dir({{"bin", options->value("bin-dir")}, {"data", options->value("dir")}})
+        , home(os::path::canonical(options->value("home-dir")))
+    {
+    }
 
     void execute();
 private:
@@ -384,8 +385,8 @@ void Operation::from_vault(QString const &data_type
 
 void Operation::execute()
 {
-    QString vault_bin_dir = str(options->value("bin_dir")),
-        vault_data_dir = str(options->value("data_dir"));
+    QString vault_bin_dir = str(options->value("bin-dir")),
+        vault_data_dir = str(options->value("dir"));
         
     action_type action;
 
