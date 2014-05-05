@@ -24,7 +24,7 @@ public:
     template <typename ...A>
     static QString join(QString const& a, QString const& b, A&& ...args)
     {
-        return join(a+b, std::forward<A>(args)...);
+        return join(QStringList({a, b}).join("/"), std::forward<A>(args)...);
     }
 
     static inline bool exists(QString const &p)

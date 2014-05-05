@@ -3,13 +3,15 @@
 
 #include "util.hpp"
 
+#include <QSet>
+
 namespace sys {
 
 QStringList command_line_options
 (QVariantMap const &options
  , string_map_type const &short_options = string_map_type()
  , string_map_type const &long_options = string_map_type()
- , QMap<QString, bool> const &options_has_param = QMap<QString, bool>());
+ , QSet<QString> const &options_has_param = QSet<QString>());
 
 class GetOpt
 {

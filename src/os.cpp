@@ -79,7 +79,7 @@ int cp(QString const &src, QString const &dst, QVariantMap &&options)
 
     auto args = sys::command_line_options
         (options, short_options, long_options
-         , {{"preserve", true}, {"no_preserve", true}});
+         , {{"preserve", "no_preserve"}});
 
     args += QStringList({src, dst});
     return system("cp", args);

@@ -8,7 +8,7 @@ namespace sys {
 QStringList command_line_options(QVariantMap const &options
                                  , string_map_type const &short_options
                                  , string_map_type const &long_options
-                                 , QMap<QString, bool> const &options_has_param)
+                                 , QSet<QString> const &options_has_param)
 {
     QStringList cmd_options;
 
@@ -17,8 +17,9 @@ QStringList command_line_options(QVariantMap const &options
         auto v = it.value();
         auto opt = short_options[n];
         if (!opt.isEmpty()) {
-            if (options_has_param[n]) {
-                cmd_options.append(QStringList({QString("-")+ opt, str(v)}));
+            if (options_has_param.contains(n)) {
+                auto params = QStringList({QString("-")+ opt, str(v)});
+                cmd_options.append(params);
             } else {
                 if (v.toBool())
                     cmd_options.push_back(QString("-") + opt);
@@ -27,7 +28,7 @@ QStringList command_line_options(QVariantMap const &options
         }
         opt = long_options[n];
         if (!opt.isEmpty()) {
-            if (options_has_param[n]) {
+            if (options_has_param.contains(n)) {
                 auto long_opt = QStringList({"--", opt, "=", str(v)}).join("");
                 cmd_options.push_back(long_opt);
             } else {
