@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         config.insert("user.name", "Some Sailor");
         qDebug()<<vault.init(config);
     } else if (action == "backup" || action == "export") {
-        vault.backup(parser.value(homeOption), QStringList(), "");
+        vault.backup(parser.value(homeOption), QStringList() << "unit1" << "unit2", "");
     } else if (action == "list-snapshots") {
         for (const Snapshot &snapshot: vault.snapshots()) {
             qDebug() << snapshot.tag();

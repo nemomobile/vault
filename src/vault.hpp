@@ -40,7 +40,7 @@ public:
 
 private:
     bool setState(const QString &state);
-    bool backupUnit(const QString &unit, const ProgressCallback &callback);
+    bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &unit, const ProgressCallback &callback);
     void tagSnapshot(const QString &msg);
 
