@@ -282,14 +282,12 @@ struct Unit
         }
     }
 
-    bool restore()
+    void restore()
     {
         if (!m_root.exists()) {
-            debug::error("no such directory", m_root.path());
-            return false;
+            error::raise({{"reason", "absent"}, {"name", m_unit}});
         }
         execScript("import");
-        return true;
     }
 
     QString m_home;
@@ -323,15 +321,18 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
 
 bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
 {
-    callback(unit, "begin");
-    Unit u(unit, &m_vcs);
-    if (u.restore()) {
+    try {
+        callback(unit, "begin");
+        Unit u(unit, &m_vcs);
+        u.restore();
         callback(unit, "ok");
-        return true;
+    } catch (error::Error err) {
+        debug::error(err.what(), "\n");
+        callback(unit, err.m.contains("reason") ? err.m.value("reason").toString() : "fail");
+        return false;
     }
 
-    callback(unit, "fail");
-    return false;
+    return true;
 }
 
 void Vault::tagSnapshot(const QString &msg)
