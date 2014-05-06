@@ -10,7 +10,7 @@ set(CMAKE_AUTOMOC TRUE)
 set(UNIT_TESTS unit)
 
 add_executable(unit_all unit_all.cpp)
-target_link_libraries(unit_all cutespp)
+target_link_libraries(unit_all vault-unit)
 qt5_use_modules(unit_all Core)
 
 MACRO(UNIT_TEST _name)

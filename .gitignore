@@ -12,8 +12,10 @@ CTestTestfile.cmake
 /Testing/
 self_test.xml
 /*.pc
-/src/*.so
+*.so
+*.so.*
 tests/Testing
 *automoc.cpp
 moc_*
 examples/use_cutes
+src/vault-cli
