@@ -29,6 +29,7 @@ tf vault_unit_test("unit");
 
 enum test_ids {
     tid_export =  1,
+    tid_import
 };
 
 namespace {
@@ -55,6 +56,8 @@ typedef cor::ScopeExit<std::function<void ()> > teardown_type;
 teardown_type setup()
 {
     auto mkdir = [](QString const &p) {
+        ensure(std::string("Dir should not exist:") + p.toStdString()
+               , !os::path::exists(p));
         if (!os::mkdir(p, {{"parent", true}}))
             error::raise({{"msg", "Can't create"}, {"path", p}});
     };
@@ -118,13 +121,37 @@ template<> template<>
 void object::test<tid_export>()
 {
     auto on_exit = setup();
+    auto check_clean = cor::on_scope_exit([]() {
+            ensure("Root is cleaned", !os::path::exists(root));
+        });
     QVariantMap options = {{"dir", vault}, {"bin-dir", vault}
                            , {"home-dir", home}, {"action", "export"}};
     auto args = sys::command_line_options
         (options, short_options, long_options, options_has_param);
-    qDebug() << args;
     subprocess::check_output("./unit_all", args);
     auto out = str(subprocess::check_output("./check_dirs_similar.sh", QStringList({home, vault})));
+    auto lines = out.split("\n").filter(QRegExp("^[<>]"));
+    QStringList expected = {"< ./bin/symlink_to_dir", "< ./data/symlink_to_dir"
+                            , "> ./" + vault::config::prefix + ".links"
+                            , "> ./" + vault::config::prefix + ".unit.version"};
+    lines.sort();
+    expected.sort();
+    ensure_eq("Unexpected structure difference", lines, expected);
+}
+
+template<> template<>
+void object::test<tid_import>()
+{
+    auto on_exit = setup();
+    QVariantMap options = {
+        {"dir", vault}, {"bin-dir", vault}
+        , {"home-dir", home_out}, {"action", "import"}};
+    auto args = sys::command_line_options
+        (options, short_options, long_options, options_has_param);
+    subprocess::check_output("./unit_all", args);
+
+    auto out = str(subprocess::check_output
+                   ("./check_dirs_similar.sh", QStringList({home, home_out})));
     auto lines = out.split("\n").filter(QRegExp("^[<>]"));
     QStringList expected = {"< ./bin/symlink_to_dir", "< ./data/symlink_to_dir"
                             , "> ./" + vault::config::prefix + ".links"
