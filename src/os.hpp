@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QString>
 #include <QVariant>
+#include <QDateTime>
 
 using subprocess::Process;
 
@@ -120,6 +121,21 @@ inline int unlink(QString const &what)
 {
     return system("unlink", {what});
 }
+
+inline int rename(QString const &from, QString const &to)
+{
+    return system("mv", {from, to});
+}
+
+inline QDateTime lastModified(QString const &path)
+{
+    return QFileInfo(path).lastModified();
+}
+
+inline int setLastModified(QString const &path, QDateTime const &timeval)
+{
+    return system("touch", {"-d", timeval.toString(), path});
+};
 
 }
 
