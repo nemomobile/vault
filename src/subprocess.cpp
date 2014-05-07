@@ -77,20 +77,30 @@ bool Process::is_error() const
             : true);
 }
 
+void Process::check_error()
+{
+    if (rc())
+        error::raise({{"msg", "Process error"}
+                , {"cmd", ps.program()}
+                , {"args", QVariant(ps.arguments())}
+                , {"rc", rc()}
+                , {"stderr", stderr()}
+                , {"stdout", stdout()}
+                , {"info", errorInfo()}});
+}
+
+QByteArray Process::check_output(QString const &cmd, QStringList const &args)
+{
+    start(cmd, args);
+    wait(-1);
+    check_error();
+    return stdout();
+}
+
 QByteArray check_output(QString const &cmd, QStringList const &args)
 {
     Process p;
-    p.start(cmd, args);
-    p.wait(-1);
-    if (p.rc())
-        error::raise({{"msg", "Process error"}
-                , {"cmd", cmd}
-                , {"args", QVariant(args)}
-                , {"rc", p.rc()}
-                , {"stderr", p.stderr()}
-                , {"stdout", p.stdout()}
-                , {"info", p.errorInfo()}});
-    return p.stdout();
+    return p.check_output(cmd, args);
 }
 
 }

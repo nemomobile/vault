@@ -20,6 +20,12 @@ public:
     bool is_error() const;
     QString errorInfo() const;
 
+    void popen_sync(QString const &cmd, QStringList const &args)
+    {
+        start(cmd, args);
+        ps.waitForStarted(-1);
+    }
+
     int rc() const
     {
         return is_error() ? -1111 : ps.exitCode();
@@ -40,13 +46,22 @@ public:
         return ps.readAllStandardError();
     }
 
+    void stdinClose()
+    {
+        ps.closeWriteChannel();
+    }
+
     Q_PID pid() const
     {
         return ps.pid();
     }
 
-private:
+    void check_error();
 
+    QByteArray check_output(QString const &, QStringList const &);
+
+private:
+    
     mutable QProcess ps;
     bool isRunning_;
     bool isError_;

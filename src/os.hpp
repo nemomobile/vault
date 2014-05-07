@@ -60,6 +60,10 @@ public:
     {
         return QFileInfo(p).dir().path();
     }
+    static inline QString fileName(QString const &p)
+    {
+        return QFileInfo(p).fileName();
+    }
 
     static QStringList split(QString const &p);
 
@@ -79,6 +83,11 @@ static inline bool mkdir(QString const &path)
 }
 
 namespace {
+
+inline QString home()
+{
+    return QDir::homePath();
+}
 
 inline QByteArray read_file(QString const &fname)
 {
@@ -136,6 +145,11 @@ inline int setLastModified(QString const &path, QDateTime const &timeval)
 {
     return system("touch", {"-d", timeval.toString(), path});
 };
+
+inline int rm(QString const &path)
+{
+    return system("rm", {path});
+}
 
 }
 

@@ -29,6 +29,11 @@ inline QString str(int v)
     return QString::number(v);
 }
 
+inline QString str(char const *v)
+{
+    return QString(v);
+}
+
 inline bool is(QVariant const &v)
 {
     return v.toBool();
