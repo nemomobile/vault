@@ -168,7 +168,7 @@ void Operation::to_vault(QString const &data_type
         auto dst = os::path::dirName(os::path::join(dst_root, str(info["path"])));
         auto src = str(info["full_path"]);
         map_type options = {{"preserve", default_preserve}};
-        std::function<void(QString const&, QString const&, map_type &&)> fn;
+        int (*fn)(QString const&, QString const&, map_type &&);
         
         if (!(os::path::isDir(dst) || os::mkdir(dst, {{ "parent", true }}))) {
             error::raise({{"msg", "Can't create destination in vault"}
@@ -176,9 +176,9 @@ void Operation::to_vault(QString const &data_type
         }
         
         if (os::path::isDir(src)) {
-            fn = os::update_tree;
+            fn = &os::update_tree;
         } else if (os::path::isFile(src)) {
-            fn = os::cp;
+            fn = &os::cp;
         } else {
             error::raise({{"msg", "No handler for this entry type"}
                     , {"path", src}});

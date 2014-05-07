@@ -139,12 +139,23 @@ inline int rm(QString const &path)
 
 }
 
-int cp(QString const &src, QString const &dst
-       , QVariantMap &&options = QVariantMap());
+int cp(QString const &, QString const &, QVariantMap &&);
+
+static inline int cp(QString const &src, QString const &dst)
+{
+    return cp(src, dst, QVariantMap());
+}
+
 int update(QString const &src, QString const &dst
            , QVariantMap &&options = QVariantMap());
-int update_tree(QString const &src, QString const &dst
-                , QVariantMap &&options = QVariantMap());
+
+int update_tree(QString const &, QString const &, QVariantMap &&);
+
+static inline int update_tree(QString const &src, QString const &dst)
+{
+    return update_tree(src, dst, QVariantMap());
+}
+
 int cptree(QString const &src, QString const &dst
            , QVariantMap &&options = QVariantMap());
 
