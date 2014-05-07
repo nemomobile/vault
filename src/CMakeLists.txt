@@ -19,7 +19,7 @@ set_target_properties(cutespp PROPERTIES
   )
 install(TARGETS cutespp DESTINATION ${DST_LIB})
 
-add_library(vault SHARED vault.cpp)
+add_library(vault SHARED vault.cpp vault_config.cpp)
 qt5_use_modules(vault Core)
 target_link_libraries(vault cutespp ${libgit_LIBRARIES})
 set_target_properties(vault PROPERTIES

@@ -1,12 +1,73 @@
 #ifndef _VAULT_CONFIG_HPP_
 #define _VAULT_CONFIG_HPP_
 
+#include <QString>
+#include <QMap>
+#include <QVariantMap>
+
+namespace LibGit {
+class Repo;
+}
+
 namespace vault { namespace config {
 
 namespace {
 
 const QString prefix = ".f8b52b7481393a3e6ade051ecfb549fa";
 }
+
+class Unit
+{
+public:
+    Unit();
+    explicit Unit(const QVariantMap &data);
+
+    Unit &read(const QString &fname);
+    ssize_t write(const QString &fname);
+    bool update(const QVariantMap &src);
+
+    QString name() const;
+    QString script() const;
+
+private:
+    QVariantMap m_data;
+};
+
+class Config
+{
+public:
+    explicit Config(const QString &unitsDir);
+    ~Config();
+
+    void load();
+    bool set(const QVariantMap &data);
+    QString rm(const QString &name);
+
+    QMap<QString, Unit> units() const;
+    QString path(const QString &fname) const;
+    QString root() const;
+
+private:
+    QString m_unitsDir;
+    QMap<QString, Unit> m_units;
+};
+
+class Vault
+{
+public:
+    explicit Vault(LibGit::Repo *vcs);
+    ~Vault();
+
+    bool set(const QVariantMap &data);
+    bool rm(const QString &name);
+    bool update(const QVariantMap &src);
+
+    QMap<QString, Unit> units() const;
+
+private:
+    Config m_config;
+    LibGit::Repo *m_vcs;
+};
 
 }}
 

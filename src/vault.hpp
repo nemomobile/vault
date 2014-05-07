@@ -8,6 +8,8 @@
 
 #include <libgit/repo.h>
 
+#include <vault_config.hpp>
+
 class Snapshot
 {
 public:
@@ -46,6 +48,7 @@ private:
 
     QString m_path;
     LibGit::Repo m_vcs;
+    vault::config::Vault m_config;
 };
 
 #endif

@@ -31,6 +31,7 @@ Snapshot::Snapshot(const LibGit::Tag &tag)
 Vault::Vault(const QString &path)
      : m_path(path)
      , m_vcs(path)
+     , m_config(&m_vcs)
 {
 }
 
@@ -83,15 +84,17 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     m_vcs.reset(LibGit::ResetOptions::Hard);
     m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
 
-    if (!units.isEmpty()) {
-        for (const QString &unit: units) {
-            if (backupUnit(home, unit, progress)) {
-                res.failedUnits.removeOne(unit);
-                res.succededUnits << unit;
-            }
+    QStringList usedUnits = units;
+    if (units.isEmpty()) {
+        for (auto i = m_config.units().begin(); i != m_config.units().end(); ++i) {
+            usedUnits << i.key();
         }
-    } else {
-        //TODO
+    }
+    for (const QString &unit: usedUnits) {
+        if (backupUnit(home, unit, progress)) {
+            res.failedUnits.removeOne(unit);
+            res.succededUnits << unit;
+        }
     }
 
     QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
@@ -121,15 +124,18 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
     };
 
     m_vcs.checkout(snapshot.tag());
-    if (!units.isEmpty()) {
-        for (const QString &unit: units) {
-            if (restoreUnit(unit, progress)) {
-                res.failedUnits.removeOne(unit);
-                res.succededUnits << unit;
-            }
+    QStringList usedUnits = units;
+    if (units.isEmpty()) {
+        for (auto i = m_config.units().begin(); i != m_config.units().end(); ++i) {
+            usedUnits << i.key();
         }
-    } else {
-        //TODO
+    }
+
+    for (const QString &unit: usedUnits) {
+        if (restoreUnit(unit, progress)) {
+            res.failedUnits.removeOne(unit);
+            res.succededUnits << unit;
+        }
     }
 
     return res;
@@ -162,10 +168,11 @@ bool Vault::setState(const QString &state)
 
 struct Unit
 {
-    Unit(const QString &unit, LibGit::Repo *vcs)
+    Unit(const QString &unit, LibGit::Repo *vcs, const vault::config::Unit &config)
         : m_unit(unit)
         , m_root(QDir(vcs->path() + "/" + unit))
         , m_vcs(vcs)
+        , m_config(config)
     {
         m_blobs = m_root.absolutePath() + "/blobs";
         m_data = m_root.absolutePath() + "/data";
@@ -173,7 +180,7 @@ struct Unit
 
     void execScript(const QString &action)
     {
-        QString script = m_unit; //FIXME
+        QString script = m_config.script();
         debug::info("SCRIPT>>>", script, "action", action);
         if (!QFileInfo(script).isExecutable()) {
             error::raise({{"msg", "Should be executable"}, {"script", script}});
@@ -232,7 +239,7 @@ struct Unit
     void backup(const QString &home)
     {
         m_home = home;
-        QString name = m_unit; //FIXME
+        QString name = m_config.name();
 
         // cleanup directories for data and blobs in
         // the repository
@@ -253,7 +260,7 @@ struct Unit
             }
 
             QString fname = QFileInfo(file.file).fileName();
-            QString prefix = m_unit; //FIXME
+            QString prefix = vault::config::prefix;
             if (fname.length() >= prefix.length() && fname.startsWith(prefix)) {
                 m_vcs->add(file.file);
                 break;
@@ -296,6 +303,7 @@ struct Unit
     LibGit::Repo *m_vcs;
     QString m_blobs;
     QString m_data;
+    vault::config::Unit m_config;
 };
 
 bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
@@ -305,7 +313,7 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
 
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs);
+        Unit u(unit, &m_vcs, m_config.units().value(unit));
         u.backup(home);
         callback(unit, "ok");
     } catch (error::Error err) {
@@ -323,7 +331,7 @@ bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
 {
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs);
+        Unit u(unit, &m_vcs, m_config.units().value(unit));
         u.restore();
         callback(unit, "ok");
     } catch (error::Error err) {
