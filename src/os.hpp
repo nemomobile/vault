@@ -82,38 +82,24 @@ static inline bool mkdir(QString const &path)
     return mkdir(path, QVariantMap());
 }
 
+QByteArray read_file(QString const &fname);
+ssize_t write_file(QString const &fname, QByteArray const &data);
+
+static inline ssize_t write_file(QString const &fname, QString const &data)
+{
+    return write_file(fname, data.toUtf8());
+}
+
+static inline ssize_t write_file(QString const &fname, char const *data)
+{
+    return write_file(fname, QString(data).toUtf8());
+}
+
 namespace {
 
 inline QString home()
 {
     return QDir::homePath();
-}
-
-inline QByteArray read_file(QString const &fname)
-{
-    QFile f(fname);
-    if (!f.open(QFile::ReadOnly))
-        return QByteArray();
-    return f.readAll();
-}
-
-inline ssize_t write_file(QString const &fname, QByteArray const &data)
-{
-    QFile f(fname);
-    if (!f.open(QFile::WriteOnly))
-        return 0;
-    
-    return f.write(data);
-}
-
-inline ssize_t write_file(QString const &fname, QString const &data)
-{
-    return write_file(fname, data.toUtf8());
-}
-
-inline ssize_t write_file(QString const &fname, char const *data)
-{
-    return write_file(fname, QString(data).toUtf8());
 }
 
 inline int symlink(QString const &tgt, QString const &link)

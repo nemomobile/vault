@@ -92,4 +92,21 @@ int cptree(QString const &src, QString const &dst, QVariantMap &&options)
     return cp(src, dst, std::move(options));
 }
 
+QByteArray read_file(QString const &fname)
+{
+    QFile f(fname);
+    if (!f.open(QFile::ReadOnly))
+        return QByteArray();
+    return f.readAll();
+}
+
+ssize_t write_file(QString const &fname, QByteArray const &data)
+{
+    QFile f(fname);
+    if (!f.open(QFile::WriteOnly))
+        return 0;
+
+    return f.write(data);
+}
+
 }
