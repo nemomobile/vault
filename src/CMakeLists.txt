@@ -10,7 +10,7 @@ link_directories(
 
 set(CMAKE_AUTOMOC TRUE)
 
-add_library(cutespp debug.cpp os.cpp json.cpp sys.cpp subprocess.cpp)
+add_library(cutespp SHARED debug.cpp os.cpp json.cpp sys.cpp subprocess.cpp)
 qt5_use_modules(cutespp Core)
 target_link_libraries(cutespp ${COR_LIBRARIES})
 set_target_properties(cutespp PROPERTIES
