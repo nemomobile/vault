@@ -8,8 +8,6 @@ link_directories(
   ${COR_LIBRARY_DIRS} ${libgit_LIBRARY_DIRS}
 )
 
-
-find_package(Qt5Core REQUIRED)
 set(CMAKE_AUTOMOC TRUE)
 
 add_library(cutespp debug.cpp os.cpp json.cpp sys.cpp subprocess.cpp)

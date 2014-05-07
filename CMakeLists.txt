@@ -26,6 +26,7 @@ message(STATUS "Long version is ${LONG_VERSION}")
 message(STATUS "Multiarch is ${ENABLE_MULTIARCH}")
 
 find_package(PkgConfig REQUIRED)
+find_package(Qt5Core REQUIRED)
 
 set(CMAKE_CXX_FLAGS
   "${CMAKE_CXX_FLAGS} -fPIC -W -Wall -Wextra -Werror -g -O2 -std=c++0x")
