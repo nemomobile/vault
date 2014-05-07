@@ -19,3 +19,4 @@ tests/Testing
 moc_*
 examples/use_cutes
 src/vault-cli
+units/vault-*
