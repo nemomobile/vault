@@ -15,6 +15,8 @@
 #include "debug.hpp"
 #include "subprocess.hpp"
 
+namespace vault {
+
 static const struct {
     int tree;
     int repository;
@@ -168,7 +170,7 @@ bool Vault::setState(const QString &state)
 
 struct Unit
 {
-    Unit(const QString &unit, LibGit::Repo *vcs, const vault::config::Unit &config)
+    Unit(const QString &unit, LibGit::Repo *vcs, const config::Unit &config)
         : m_unit(unit)
         , m_root(QDir(vcs->path() + "/" + unit))
         , m_vcs(vcs)
@@ -260,7 +262,7 @@ struct Unit
             }
 
             QString fname = QFileInfo(file.file).fileName();
-            QString prefix = vault::config::prefix;
+            QString prefix = config::prefix;
             if (fname.length() >= prefix.length() && fname.startsWith(prefix)) {
                 m_vcs->add(file.file);
                 break;
@@ -303,7 +305,7 @@ struct Unit
     LibGit::Repo *m_vcs;
     QString m_blobs;
     QString m_data;
-    vault::config::Unit m_config;
+    config::Unit m_config;
 };
 
 bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
@@ -346,5 +348,6 @@ bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
 void Vault::tagSnapshot(const QString &msg)
 {
     m_vcs.tag(QLatin1String(">") + msg);
+}
 
 }

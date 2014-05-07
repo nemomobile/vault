@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 
     parser.process(app);
 
-    Vault vault(parser.value("vault"));
+    vault::Vault vault(parser.value("vault"));
     QString action = parser.value("action");
     if (action == "init") {
         QVariantMap config;
@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     } else if (action == "backup" || action == "export") {
         vault.backup(parser.value(homeOption), QStringList() << "unit1" << "unit2", "");
     } else if (action == "list-snapshots") {
-        for (const Snapshot &snapshot: vault.snapshots()) {
+        for (const vault::Snapshot &snapshot: vault.snapshots()) {
             qDebug() << snapshot.tag();
         }
     }

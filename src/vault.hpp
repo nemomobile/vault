@@ -10,6 +10,8 @@
 
 #include <vault_config.hpp>
 
+namespace vault {
+
 class Snapshot
 {
 public:
@@ -48,7 +50,9 @@ private:
 
     QString m_path;
     LibGit::Repo m_vcs;
-    vault::config::Vault m_config;
+    config::Vault m_config;
 };
+
+}
 
 #endif
