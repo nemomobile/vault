@@ -36,6 +36,11 @@ set(CMAKE_CXX_FLAGS
 set(CMAKE_CXX_FLAGS
   "${CMAKE_CXX_FLAGS} -Wno-psabi")
 
+# fix for gcc 4.6 specific compiling/linking issues, no dwarf-4
+set(CMAKE_CXX_FLAGS
+  "${CMAKE_CXX_FLAGS} -gdwarf-3"
+  )
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
 add_subdirectory(examples)
