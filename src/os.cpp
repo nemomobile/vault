@@ -130,4 +130,143 @@ size_t get_block_size(QString const &cmd_name)
     }
     return (res ? res : (is(environ("POSIXLY_CORRECT")) ? 512 : 1024));
 }
+
+QList<QVariantMap> mount()
+{
+    static const QStringList names = {"src", "dst", "type", "options"};
+    auto line2obj = [&names](QString const &line) {
+        auto fields = line.split(QRegExp("\\s+"));
+        return map(util::zip(names, fields));
+    };
+    auto split_options = [](QMap<QString, QString> const &fields) {
+        QVariantMap res;
+        for (auto it = fields.begin(); it != fields.end(); ++it) {
+            if (it.key() != "options")
+                res.insert(it.key(), it.value());
+            else
+                res.insert(it.key(), it.value().split(","));
+        }
+        return res;
+    };
+
+    auto data = str(subprocess::check_output("cat", {"/proc/mounts"}));
+    auto lines = filterEmpty(data.split("\n"));
+    auto fields = util::map<QMap<QString, QString> >(line2obj, lines);
+    return util::map<QVariantMap>(split_options, fields);
 }
+
+QString mountpoint(QString const &path)
+{
+    QStringList commands = {"df -P " + path, "tail -1", "awk \"{ print $NF}\""};
+    QStringList options = {"-c", commands.join(" | ")};
+    auto data = subprocess::check_output("sh", options);
+    return str(data).split("\n")[0];
+}
+
+/**
+ * options.fields - sequence of characters used for field ids used by
+ * stat (man 1 stat)
+ */
+string_map_type stat(QString const &path, QVariantMap &&options)
+{
+    debug::debug("stat", path, options);
+
+    static const string_map_type long_options = {
+        {"filesystem", "file-system"}, {"format", "format"}};
+
+    if (!hasType(options["fields"], QMetaType::QString))
+        error::raise({{"msg", "Need to have fields set in options"}});
+
+    auto const &requested = str(options["fields"]);
+
+    auto commify = [](QString const &fields) {
+        auto prepend = [](QChar const &c) { return QString("%") + c; };
+        return QStringList(util::map<QString>(prepend, fields)).join(",");
+    };
+    options["format"] = commify(requested);
+
+    auto cmd_options = sys::command_line_options(options, {}, long_options, {"format"});
+    cmd_options.push_back(path);
+
+    auto data = str(subprocess::check_output("stat", cmd_options)).trimmed().split(",");
+    if (data.size() != requested.size())
+        error::raise({{"msg", "Fields set length != stat result length"}
+                , {"fields", options["fields"]}
+                , {"format", options["format"]}
+                , {"result", data}});
+
+    static const string_map_type filesystem_fields = {
+        {"b", "blocks"}, {"a", "free_blocks_user"}, {"f", "free_blocks"}
+        , {"S", "block_size"}, {"n", "name"}};
+    static const string_map_type entry_fields = {
+        {"m", "mount_point"}, {"b", "blocks"}, {"B", "block_size"}, {"s", "size"}};
+
+
+    string_map_type res;
+    size_t i = 0;
+    auto const &fields = is(options["filesystem"]) ? filesystem_fields : entry_fields;
+    for (auto it = data.begin(); it != data.end(); ++it) {
+        auto value = *it;
+        auto c = requested[i++];
+        auto name = fields[c];
+        if (name.isEmpty())
+            error::raise({{"msg", "Can't find field name"}, {"id", c}});
+        if (c == 'm' && value == "?") {
+            // workaround if "m" is not supported
+            value = mountpoint(path);
+        }
+        res[name] = value;
+    }
+    debug::debug("stat result", path, res);
+    return res;
+}
+
+class BtrFs {
+public:
+
+    BtrFs(QString const &mount_point) : path(mount_point) {}
+
+    QVariantMap df()
+    {
+        QStringList cmd_options = {"-c", "btrfs fi df " + path};
+        auto out = str(subprocess::check_output("sh", cmd_options));
+        auto data = filterEmpty(out.trimmed().split("\n"));
+
+        auto split_colon = [](QString const &l) { return l.split(":"); };
+        auto name_fields = util::map<QStringList>(split_colon, data);
+
+        auto parse = [](QStringList const &nf) {
+            auto parse_size = [](QString const &n_eq_v) {
+                auto nv = n_eq_v.trimmed().split("=");
+                auto kb = util::parseBytes(nv[1], "kb", kb_bytes);
+                return std::make_tuple(nv[0], kb);
+            };
+            auto names_kbs = util::map<map_tuple_type>(parse_size, nf[1].split(","));
+            auto fields = map(names_kbs);
+            return std::make_tuple(nf[0], QVariant(fields));
+        };
+        return map(util::map<map_tuple_type>(parse, name_fields));
+    }
+
+    double free()
+    {
+        debug::debug("btrfs.free for", path);
+        auto s = stat(path, {{"fields", "bS"}, {"filesystem", true}});
+        auto b = s["blocks"].toLong(), bs = s["block_size"].toLong();
+        auto kb = bs / kb_bytes;
+        auto total = kb * b;
+        auto info = df();
+        
+        auto used = util::map<double>([](QString const &, QVariant const &v) {
+                auto used = util::map<double>([](QString const &k, QVariant const &v) {
+                        return (k == "used") ? v.toDouble() : 0.0;
+                    }, v.toMap());
+                return std::accumulate(used.begin(), used.end(), 0);
+            }, info);
+        return total - std::accumulate(used.begin(), used.end(), 0);
+    }
+
+private:
+    static const size_t kb_bytes = 1024;
+    QString path;
+};

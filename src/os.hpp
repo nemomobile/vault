@@ -167,6 +167,11 @@ int cptree(QString const &src, QString const &dst
 
 size_t get_block_size(QString const &);
 
+QList<QVariantMap> mount();
+QString mountpoint(QString const &path);
+string_map_type stat(QString const &path, QVariantMap &&options = QVariantMap());
+
+
 }
 
 #endif // _CUTES_OS_HPP_
