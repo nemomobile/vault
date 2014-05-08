@@ -77,30 +77,35 @@ bool Process::is_error() const
             : true);
 }
 
-void Process::check_error()
+void Process::check_error(QVariantMap const &error_info)
 {
-    if (rc())
-        error::raise({{"msg", "Process error"}
-                , {"cmd", ps.program()}
-                , {"args", QVariant(ps.arguments())}
-                , {"rc", rc()}
-                , {"stderr", stderr()}
-                , {"stdout", stdout()}
-                , {"info", errorInfo()}});
+    if (!rc())
+        return;
+    QVariantMap err = {{"msg", "Process error"}
+                       , {"cmd", ps.program()}
+                       , {"args", QVariant(ps.arguments())}
+                       , {"rc", rc()}
+                       , {"stderr", stderr()}
+                       , {"stdout", stdout()}
+                       , {"info", errorInfo()}};
+    err.unite(error_info);
+    error::raise(err);
 }
 
-QByteArray Process::check_output(QString const &cmd, QStringList const &args)
+QByteArray Process::check_output
+(QString const &cmd, QStringList const &args, QVariantMap const &error_info)
 {
     start(cmd, args);
     wait(-1);
-    check_error();
+    check_error(error_info);
     return stdout();
 }
 
-QByteArray check_output(QString const &cmd, QStringList const &args)
+QByteArray check_output(QString const &cmd, QStringList const &args
+                        , QVariantMap const &error_info)
 {
     Process p;
-    return p.check_output(cmd, args);
+    return p.check_output(cmd, args, error_info);
 }
 
 }

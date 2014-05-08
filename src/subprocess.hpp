@@ -2,6 +2,7 @@
 #define _CUTES_SUBPROCESS_HPP_
 
 #include <QProcess>
+#include <QVariant>
 
 namespace subprocess {
 
@@ -56,9 +57,17 @@ public:
         return ps.pid();
     }
 
-    void check_error();
+    void check_error(QVariantMap const &error_info);
+    void check_error()
+    {
+        check_error(QVariantMap());
+    }
 
-    QByteArray check_output(QString const &, QStringList const &);
+    QByteArray check_output(QString const &, QStringList const &, QVariantMap const &);
+    QByteArray check_output(QString const &cmd, QStringList const &args)
+    {
+        return check_output(cmd, args, QVariantMap());
+    }
 
 private:
     
@@ -71,7 +80,11 @@ private slots:
     void onFinished(int, QProcess::ExitStatus);
 };
 
-QByteArray check_output(QString const &cmd, QStringList const &args);
+QByteArray check_output(QString const &cmd, QStringList const &args, QVariantMap const &);
+static inline QByteArray check_output(QString const &cmd, QStringList const &args)
+{
+    return check_output(cmd, args, QVariantMap());
+}
 
 
 }
