@@ -39,6 +39,11 @@ inline bool is(QVariant const &v)
     return v.toBool();
 }
 
+inline bool is(QString const &v)
+{
+    return v.isEmpty() ? false : v.toUInt();
+}
+
 inline bool hasType(QVariant const &v, QMetaType::Type t)
 {
     return static_cast<QMetaType::Type>(v.type()) == t;
@@ -46,6 +51,8 @@ inline bool hasType(QVariant const &v, QMetaType::Type t)
 
 typedef QVariantMap map_type;
 typedef QMap<QString, QString> string_map_type;
+typedef QList<QVariant> list_type;
+typedef std::tuple<QString, QVariant> map_tuple_type;
 
 inline QVariantMap map(std::initializer_list<std::pair<QString, QVariant> > data)
 {
@@ -69,9 +76,24 @@ inline QVariantMap const & map(QVariantMap const &data)
     return data;
 }
 
+template <typename X, typename Y>
+inline QMap<X, Y> map(QList<std::tuple<X, Y> > const &src)
+{
+    QMap<X, Y> res;
+    for (auto it = src.begin(); it != src.end(); ++it) {
+        res.insert(std::get<0>(*it), std::get<1>(*it));
+    }
+    return res;
+}
+
 QVariant get(QVariantMap const &m, QString const &k1)
 {
     return m[k1];
+}
+
+inline QStringList filterEmpty(QStringList const &src)
+{
+    return src.filter(QRegExp("^.+$"));
 }
 
 }
@@ -99,9 +121,8 @@ T unbox(std::unique_ptr<T> p)
 
 namespace util {
 
-
 template <typename ResT, typename T, typename FnT>
-QList<ResT> map(QList<T> const &src, FnT fn)
+QList<ResT> map(FnT fn, QList<T> const &src)
 {
     QList<ResT> res;
     for (auto it = src.begin(); it != src.end(); ++it) {
@@ -109,6 +130,46 @@ QList<ResT> map(QList<T> const &src, FnT fn)
     }
     return res;
 }
+
+template <typename ResT, typename FnT, typename K, typename V>
+QList<ResT> map(FnT fn, QMap<K, V> const &src)
+{
+    QList<ResT> res;
+    for (auto it = src.begin(); it != src.end(); ++it) {
+        res.push_back(fn(it.key(), it.value()));
+    }
+    return res;
+}
+
+template <typename ResT, typename FnT>
+QList<ResT> map(FnT fn, QString const &src)
+{
+    QList<ResT> res;
+    for (auto it = src.begin(); it != src.end(); ++it) {
+        res.push_back(fn(*it));
+    }
+    return res;
+}
+
+template <typename X, typename Y>
+QList<std::tuple<X, Y> > zip(QList<X> const &x, QList<Y> const &y)
+{
+    QList<std::tuple<X, Y> > res;
+    auto yit = y.begin();
+    auto xit = x.begin();
+    while(xit != x.end()) {
+        if (yit != y.end())
+            res.push_back(std::make_tuple(*xit, *yit));
+        else
+            break;
+    }
+    while(xit != x.end())
+        res.push_back(std::make_tuple(*xit, Y()));
+
+    return res;
+}
+
+double parseBytes(QString const &s, QString const &unit = "b", long multiplier = 1024);
 
 }
 

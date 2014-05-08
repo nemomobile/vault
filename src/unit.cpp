@@ -431,7 +431,7 @@ void Operation::execute()
             auto data_type = name;
             auto paths = (hasType(items, QMetaType::QString)
                           ? list_type({get_home_path(items)})
-                          : util::map<map_type>(items.toList(), get_home_path));
+                          : util::map<map_type>(get_home_path, items.toList()));
             action(data_type, box(std::move(paths)), location);
         };
     };
