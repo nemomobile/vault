@@ -169,7 +169,16 @@ QList<std::tuple<X, Y> > zip(QList<X> const &x, QList<Y> const &y)
     return res;
 }
 
-double parseBytes(QString const &s, QString const &unit = "b", long multiplier = 1024);
+template <typename ResKeyT, typename T, typename K>
+QMap<ResKeyT, T> mapByField(QList<T> const &src, K const &key)
+{
+    auto fn = [&key](T const &v) { return std::make_tuple(ResKeyT(v[key]), v); };
+    auto pairs = map<std::tuple<ResKeyT, T> >(fn, src);
+    return ::map(pairs);
+}
+
+double parseBytes(QString const &s, QString const &unit = "b"
+                  , long multiplier = 1024);
 
 }
 

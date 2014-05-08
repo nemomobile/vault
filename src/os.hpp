@@ -170,6 +170,8 @@ size_t get_block_size(QString const &);
 QList<QVariantMap> mount();
 QString mountpoint(QString const &path);
 string_map_type stat(QString const &path, QVariantMap &&options = QVariantMap());
+QVariant du(QString const &path, QVariantMap &&options = map({{"summarize", true}
+            , {"one_filesystem", true}, {"block_size", "K"}}));
 
 
 }

@@ -256,17 +256,74 @@ public:
         auto kb = bs / kb_bytes;
         auto total = kb * b;
         auto info = df();
-        
+
         auto used = util::map<double>([](QString const &, QVariant const &v) {
-                auto used = util::map<double>([](QString const &k, QVariant const &v) {
-                        return (k == "used") ? v.toDouble() : 0.0;
-                    }, v.toMap());
-                return std::accumulate(used.begin(), used.end(), 0);
+                auto get_used = [](QString const &k, QVariant const &v) {
+                    return (k == "used") ? v.toDouble() : 0.0;
+                };
+                auto used = util::map<double>(get_used, v.toMap());
+                return std::accumulate(used.begin(), used.end(), 0.0);
             }, info);
-        return total - std::accumulate(used.begin(), used.end(), 0);
+        return total - std::accumulate(used.begin(), used.end(), 0.0);
     }
 
 private:
     static const size_t kb_bytes = 1024;
     QString path;
 };
+
+double diskFree(QString const &path)
+{
+    debug::debug("diskFree for", path);
+    auto s = stat(path, {{"fields", "m"}});
+    auto mount_point = s["mount_point"];
+    if (mount_point == "?")
+        mount_point = mountpoint(path);
+    auto mounts = util::mapByField<QVariant>(mount(), "dst");
+    auto info = mounts[mount_point];
+    if (info.empty())
+        error::raise({{"msg", "Can't find mount point"}
+                , {"path", path}
+                , {"mounts", QVariant::fromValue(mounts)}});
+    double res = 0.0;
+    if (str(info["type"]) == "btrfs") {
+        res = BtrFs(mount_point).free();
+    } else {
+        s = stat(mount_point, {{"fields", "aS"}, {"filesystem", true}});
+        auto b = s["free_blocks_user"].toDouble(), bs = s["block_size"].toDouble();
+        auto kb = bs / 1024;
+        res = kb * b;
+    }
+    debug::debug("diskFree for", path, "=", res);
+    return res;
+}
+
+QVariant du(QString const &path, QVariantMap &&options)
+{
+    static const string_map_type short_options = {
+        {"summarize", "s"}, {"one_filesystem", "x"},  {"block_size", "B"} };
+
+    if (!options["block_size"].isValid()) // return usage in K
+        options["block_size"] = "K";
+
+    auto cmd_options = sys::command_line_options
+        (options, short_options, {}, {"block_size"});
+    cmd_options.push_back(path);
+
+    auto out = str(subprocess::check_output("du", cmd_options));
+    auto data = filterEmpty(out.split("\n"));
+    if (data.size() == 1) {
+        return data[0].toDouble();
+    }
+
+    static const QRegExp spaces_re("\\s");
+    auto fields = util::map<QStringList>([](QString const &v) {
+            return v.split(spaces_re); }, data);
+    auto get_sizes = [](QStringList const &v) {
+        return std::make_tuple(v[1], v[0].toInt()); };
+    auto pairs = util::map<map_tuple_type>(get_sizes, fields);
+    return map(pairs);
+}
+
+
+} // os
