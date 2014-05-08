@@ -1,4 +1,6 @@
 #include "os.hpp"
+#include "util.hpp"
+#include "debug.hpp"
 
 namespace os {
 
@@ -109,4 +111,23 @@ ssize_t write_file(QString const &fname, QByteArray const &data)
     return f.write(data);
 }
 
+size_t get_block_size(QString const &cmd_name)
+{
+    size_t res = 0;
+    const QMap<QString, QString> prefices = {{"df", "DF"}, {"du", "DU"}};
+    auto prefix = prefices[cmd_name];
+    auto names = !prefix.isEmpty() ? QStringList(QStringList({prefix, "BLOCK_SIZE"}).join("_")) : QStringList();
+    names += QStringList({"BLOCK_SIZE", "BLOCKSIZE"});
+    for (auto it = names.begin(); it != names.end(); ++it) {
+        auto const &name = *it;
+        auto v = environ(name);
+        if (!v.isEmpty()) {
+            bool ok = false;
+            res = v.toUInt(&ok);
+            if (ok)
+                break;
+        }
+    }
+    return (res ? res : (is(environ("POSIXLY_CORRECT")) ? 512 : 1024));
+}
 }

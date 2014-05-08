@@ -137,6 +137,12 @@ inline int rm(QString const &path)
     return system("rm", {path});
 }
 
+inline QString environ(QString const &name)
+{
+    auto c = ::getenv(name.toUtf8());
+    return c ? str(c) : QString();
+}
+
 }
 
 int cp(QString const &, QString const &, QVariantMap &&);
@@ -158,6 +164,8 @@ static inline int update_tree(QString const &src, QString const &dst)
 
 int cptree(QString const &src, QString const &dst
            , QVariantMap &&options = QVariantMap());
+
+size_t get_block_size(QString const &);
 
 }
 
