@@ -69,7 +69,8 @@ private:
     void reset(const QByteArray &treeish = QByteArray());
     void resetMaster();
 
-    QString m_path;
+    const QString m_path;
+    const QString m_blobStorage;
     LibGit::Repo m_vcs;
     config::Vault m_config;
 };

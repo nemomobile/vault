@@ -32,6 +32,7 @@ Snapshot::Snapshot(const LibGit::Tag &tag)
 
 Vault::Vault(const QString &path)
      : m_path(path)
+     , m_blobStorage(os::path::join(path, ".git", "blobs"))
      , m_vcs(path)
      , m_config(&m_vcs)
 {
@@ -173,8 +174,8 @@ bool Vault::init(const QVariantMap &config)
     m_vcs.commit("anchor");
     m_vcs.tag("anchor");
 
-    if (!os::path::exists(os::path::join(m_path, ".git", "blobs"))) {
-        os::mkdir(os::path::join(m_path, ".git", "blobs"));
+    if (!os::path::exists(m_blobStorage)) {
+        os::mkdir(m_blobStorage);
     }
     if (!writeFile(".git/vault.version", QString::number(version.repository))) {
         return false;
