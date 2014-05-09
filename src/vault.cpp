@@ -264,8 +264,8 @@ bool Vault::clear(const QVariantMap &options)
 
 void Vault::reset(const QByteArray &treeish)
 {
-    if (treeish.isEmpty()) {
     m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories);
+    if (!treeish.isEmpty()) {
         m_vcs.reset(ResetOptions::Hard, treeish);
     } else {
         m_vcs.reset(ResetOptions::Hard);
