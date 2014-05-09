@@ -37,8 +37,123 @@ Vault::Vault(const QString &path)
 {
 }
 
+static QVariantMap parseKvPairs(const QString &cfg)
+{
+    QVariantMap data;
+    for (const QString v: cfg.split(',')) {
+        QStringList kv = v.split('=');
+        if (kv.size() == 2 && !kv.at(0).isEmpty()) {
+            data[kv.at(0)] = kv.at(1);
+        }
+    }
+    return data;
+}
+
+config::Vault Vault::config()
+{
+    return config::Vault(&m_vcs);
+}
+
+Vault::UnitPath Vault::unitPath(const QString &name) const
+{
+    UnitPath res;
+    res.path = os::path::join(m_vcs.path(), name);
+    res.bin = os::path::join(res.path, "blobs");
+    res.data = os::path::join(res.path, "data");
+    return res;
+};
+
+bool Vault::UnitPath::exists() const
+{
+    return os::path::isDir(path);
+}
+
+void Vault::execute(const QVariantMap &options)
+{
+    QString action = options.value("action").toString();
+    if (options.value("global").toBool()) {
+        if (action == "register") {
+            if (!options.contains("data")) {
+                error::raise({{"action", action}, {"msg", "Needs data" }});
+            }
+
+            QString cfg = options.value("data").toString();
+            QVariantMap data = parseKvPairs(cfg);
+            if (options.contains("unit")) {
+                data["name"] = options.value("unit");
+            }
+            config::Config::global()->set(data);
+        } else if (action == "unregister") {
+            if (!options.contains("unit")) {
+                error::raise({{"action", action}, {"msg", "Needs unit name"}});
+            }
+
+            config::Config::global()->rm(options.value("unit").toString());
+        } else {
+            error::raise({{"msg", "Unknown action"}, {"action", action}});
+        }
+        return;
+    }
+
+    if (!options.contains("vault")) {
+        error::raise({{"msg", "Missing option"}, {"name", "vault"}});
+    }
+
+    Vault vault(options.value("vault").toString());
+    QStringList units;
+    for (const QVariant &v: options.value("unit").toList()) {
+        units << v.toString();
+    }
+
+    if (action == "init") {
+        vault.init(parseKvPairs(options.value("git_config").toString()));
+    } else if (action == "export" || action == "backup") {
+        vault.backup(options.value("home").toString(), units, options.value("message").toString());
+    } else if (action == "import" || action == "restore") {
+        if (!options.contains("tag")) {
+            error::raise({{"msg", "tag should be provided to restore"}});
+        }
+        vault.restore(vault.snapshot(options.value("tag").toByteArray()), options.value("home").toString(), units);
+    } else if (action == "list-snapshots") {
+        for (const Snapshot &s: vault.snapshots()) {
+            qDebug() << s.tag().name();
+        }
+    } else if (action == "register") {
+        if (!options.contains("data")) {
+            error::raise({{"action", action}, {"msg", "Needs data"}});
+        }
+        qDebug()<<parseKvPairs(options.value("data").toString());
+        vault.registerConfig(parseKvPairs(options.value("data").toString()));
+    } else if (action == "unregister") {
+        if (!options.contains("unit")) {
+            error::raise({{"action", action}, {"msg", "Needs unit name"}});
+        }
+        vault.unregisterUnit(options.value("unit").toString());
+    } else {
+        error::raise({{"msg", "Unknown action"}, {"action", action}});
+    }
+}
+
+void Vault::registerConfig(const QVariantMap &config)
+{
+    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    reset("master");
+    m_config.set(config);
+}
+
+void Vault::unregisterUnit(const QString &unit)
+{
+    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    reset("master");
+    m_config.rm(unit);
+}
+
 bool Vault::init(const QVariantMap &config)
 {
+    if (!os::path::exists(m_path)) {
+        os::mkdir(m_path);
+    }
+
     if (!m_vcs.init()) {
         return false;
     }
@@ -82,13 +197,12 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         qDebug() << "Progress" << name << status;
     };
 
-    m_vcs.clean(LibGit::CleanOptions::Force | LibGit::CleanOptions::RemoveDirectories);
-    m_vcs.reset(LibGit::ResetOptions::Hard);
-    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    resetMaster();
 
     QStringList usedUnits = units;
     if (units.isEmpty()) {
-        for (auto i = m_config.units().begin(); i != m_config.units().end(); ++i) {
+        QMap<QString, config::Unit> units = config().units();
+        for (auto i = units.begin(); i != units.end(); ++i) {
             usedUnits << i.key();
         }
     }
@@ -111,6 +225,54 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     return res;
 }
 
+bool Vault::clear(const QVariantMap &options)
+{
+    if (!os::path::isDir(m_path)) {
+        debug::info("vault.clear:", "Path", m_path, "is not a dir");
+        return false;
+    }
+
+    auto destroy = [this]() {
+        return !os::rmtree(m_path) && !os::path::exists(m_path);
+    };
+
+    if (isInvalid()) {
+        if (!options.value("clear_invalid").toBool()) {
+            debug::info("vault.clear:", "Can't clean invalid vault implicitely");
+            return false;
+        }
+        if (options.value("destroy").toBool()) {
+            debug::info("vault.clear:", "Destroying invalid vault at", m_path);
+            return destroy();
+        }
+    }
+    if (options.value("destroy").toBool()) {
+        if (!options.value("ignore_snapshots").toBool() && snapshots().size()) {
+            debug::info("vault.clear:", "Can't ignore snapshots", m_path);
+            return false;
+        }
+        debug::info("vault.clear:", "Destroying vault storage at", m_path);
+        return destroy();
+    }
+    return false;
+}
+
+void Vault::reset(const QByteArray &treeish)
+{
+    m_vcs.clean(LibGit::CleanOptions::Force | LibGit::CleanOptions::RemoveDirectories);
+    if (treeish.isEmpty()) {
+        m_vcs.reset(LibGit::ResetOptions::Hard, treeish);
+    } else {
+        m_vcs.reset(LibGit::ResetOptions::Hard);
+    }
+}
+
+void Vault::resetMaster()
+{
+    reset();
+    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+}
+
 Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
     Result res;
@@ -128,7 +290,8 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
     m_vcs.checkout(snapshot.tag());
     QStringList usedUnits = units;
     if (units.isEmpty()) {
-        for (auto i = m_config.units().begin(); i != m_config.units().end(); ++i) {
+        QMap<QString, config::Unit> units = config().units();
+        for (auto i = units.begin(); i != units.end(); ++i) {
             usedUnits << i.key();
         }
     }
@@ -154,6 +317,39 @@ QList<Snapshot> Vault::snapshots() const
     return list;
 }
 
+Snapshot Vault::snapshot(const QByteArray &tagName) const
+{
+    for (const LibGit::Tag &tag: m_vcs.tags()) {
+        if (tag.name() == tagName) {
+            return Snapshot(tag);
+        }
+    }
+    error::raise({{"msg", "Wrong snapshot tag"}, {"tag", tagName}});
+    return Snapshot(m_vcs.tags().first());
+}
+
+bool Vault::exists() const
+{
+    return os::path::isDir(m_path);
+}
+
+bool Vault::isInvalid()
+{
+    QString storage(os::path::join(m_path, ".git"));
+    QString blob_storage(os::path::join(storage, "blobs"));
+    if (!os::path::exists(storage) || !os::path::exists(blob_storage)) {
+        return true;
+    }
+
+    QString anchor(os::path::join(m_path, ".vault"));
+    if (!os::path::isFile(anchor)) {
+        resetMaster();
+        if (!os::path::isFile(anchor))
+            return true;
+    }
+    return false;
+};
+
 bool Vault::writeFile(const QString &path, const QString &content)
 {
     QFile file(m_path + "/" + path);
@@ -172,12 +368,12 @@ struct Unit
 {
     Unit(const QString &unit, LibGit::Repo *vcs, const config::Unit &config)
         : m_unit(unit)
-        , m_root(QDir(vcs->path() + "/" + unit))
+        , m_root(QDir(os::path::join(vcs->path(), unit)))
         , m_vcs(vcs)
         , m_config(config)
     {
-        m_blobs = m_root.absolutePath() + "/blobs";
-        m_data = m_root.absolutePath() + "/data";
+        m_blobs = os::path::join(m_root.absolutePath(), "blobs");
+        m_data = os::path::join(m_root.absolutePath(), "data");
     }
 
     void execScript(const QString &action)
@@ -253,19 +449,18 @@ struct Unit
 
         execScript("export");
 
-        qDebug()<<"bac"<<m_unit<<m_blobs;
         LibGit::RepoStatus status = m_vcs->status(m_root.path() + "/blobs");
         for (const LibGit::RepoStatus::File &file: status.files()) {
             if (file.index == ' ' && file.workTree == 'D') {
                 m_vcs->rm(file.file);
-                break;
+                continue;
             }
 
             QString fname = QFileInfo(file.file).fileName();
             QString prefix = config::prefix;
             if (fname.length() >= prefix.length() && fname.startsWith(prefix)) {
                 m_vcs->add(file.file);
-                break;
+                continue;
             }
 
             linkBlob(file.file);
@@ -315,7 +510,7 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
 
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs, m_config.units().value(unit));
+        Unit u(unit, &m_vcs, config().units().value(unit));
         u.backup(home);
         callback(unit, "ok");
     } catch (error::Error err) {
@@ -333,7 +528,7 @@ bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
 {
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs, m_config.units().value(unit));
+        Unit u(unit, &m_vcs, config().units().value(unit));
         u.restore();
         callback(unit, "ok");
     } catch (error::Error err) {

@@ -22,6 +22,9 @@ Unit::Unit(const QVariantMap &data)
     : m_data(data)
 {
     m_data["is_unit_config"] = true;
+    if (!data.isEmpty()) {
+        update(data);
+    }
 }
 
 Unit &Unit::read(const QString &fname)
@@ -65,7 +68,16 @@ QString Unit::script() const
 }
 
 
+
+static Config mkGlobal()
+{
+    static const char *envName = "VAULT_GLOBAL_CONFIG_DIR";
+    QString unitsDir = qEnvironmentVariableIsSet(envName) ? qgetenv(envName) : "/var/lib/the-vault";
+    return Config(unitsDir);
+}
+
 static const char *moduleExt = ".json";
+Config Config::s_global = mkGlobal();
 
 Config::Config(const QString &unitsDir)
       : m_unitsDir(unitsDir)
@@ -79,6 +91,11 @@ Config::Config(const QString &unitsDir)
 
 Config::~Config()
 {
+}
+
+Config *Config::global()
+{
+    return &s_global;
 }
 
 void Config::load()
@@ -133,7 +150,16 @@ QString Config::rm(const QString &name)
         return QString();
     }
     os::rm(fname);
+    m_units.remove(name);
     return name + moduleExt;
+}
+
+void Config::setUnitsDir(const QString &dir)
+{
+    m_unitsDir = dir;
+    if (dir.isEmpty()) {
+        error::raise({{"msg", "Wrong configuration"}, {"cfg", dir}});
+    }
 }
 
 QString Config::path(const QString &fname) const
@@ -193,6 +219,15 @@ bool Vault::rm(const QString &name)
     }
     m_vcs->commit("-" + name);
     return true;
+}
+
+bool Vault::update(const QMap<QString, Unit> &src)
+{
+    QVariantMap map;
+    for (auto i = src.begin(); i != src.end(); ++i) {
+        map[i.key()] = i.value().data();
+    }
+    return update(map);
 }
 
 bool Vault::update(const QVariantMap &src)

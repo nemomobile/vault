@@ -28,6 +28,7 @@ public:
 
     QString name() const;
     QString script() const;
+    inline QVariantMap data() const { return m_data; }
 
 private:
     QVariantMap m_data;
@@ -43,13 +44,18 @@ public:
     bool set(const QVariantMap &data);
     QString rm(const QString &name);
 
+    void setUnitsDir(const QString &unitsDir);
+
     QMap<QString, Unit> units() const;
     QString path(const QString &fname) const;
     QString root() const;
 
+    static Config *global();
+
 private:
     QString m_unitsDir;
     QMap<QString, Unit> m_units;
+    static Config s_global;
 };
 
 class Vault
@@ -60,6 +66,7 @@ public:
 
     bool set(const QVariantMap &data);
     bool rm(const QString &name);
+    bool update(const QMap<QString, Unit> &src);
     bool update(const QVariantMap &src);
 
     QMap<QString, Unit> units() const;
