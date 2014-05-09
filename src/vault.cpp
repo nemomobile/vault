@@ -17,6 +17,10 @@
 
 namespace vault {
 
+using LibGit::CleanOptions;
+using LibGit::ResetOptions;
+using LibGit::CheckoutOptions;
+
 static const struct {
     int tree;
     int repository;
@@ -260,18 +264,18 @@ bool Vault::clear(const QVariantMap &options)
 
 void Vault::reset(const QByteArray &treeish)
 {
-    m_vcs.clean(LibGit::CleanOptions::Force | LibGit::CleanOptions::RemoveDirectories);
     if (treeish.isEmpty()) {
-        m_vcs.reset(LibGit::ResetOptions::Hard, treeish);
+    m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories);
+        m_vcs.reset(ResetOptions::Hard, treeish);
     } else {
-        m_vcs.reset(LibGit::ResetOptions::Hard);
+        m_vcs.reset(ResetOptions::Hard);
     }
 }
 
 void Vault::resetMaster()
 {
     reset();
-    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    m_vcs.checkout("master", CheckoutOptions::Force);
 }
 
 Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
@@ -517,8 +521,8 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
     } catch (error::Error err) {
         debug::error(err.what(), "\n");
         callback(unit, err.m.contains("reason") ? err.m.value("reason").toString() : "fail");
-        m_vcs.clean(LibGit::CleanOptions::Force | LibGit::CleanOptions::RemoveDirectories | LibGit::CleanOptions::IgnoreIgnores, name);
-        m_vcs.reset(LibGit::ResetOptions::Hard, head.sha());
+        m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories | CleanOptions::IgnoreIgnores, name);
+        m_vcs.reset(ResetOptions::Hard, head.sha());
         return false;
     }
 
