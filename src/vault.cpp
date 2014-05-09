@@ -188,6 +188,30 @@ bool Vault::init(const QVariantMap &config)
     return setState("new");
 }
 
+bool Vault::ensureValid()
+{
+    if (!os::path::exists(os::path::join(m_path, ".git"))) {
+        debug::info("Can't find .git", m_path);
+        return false;
+    }
+    if (!os::path::exists(m_blobStorage)) {
+        debug::info("Can't find blobs storage", m_blobStorage);
+        return false;
+    }
+
+    // TODO there should not be hard-coded file names and each file
+    // should have explanatory alias
+    auto versionTreeFile = os::path::join(m_path, ".vault");
+    if (!os::path::isFile(versionTreeFile)) {
+        resetMaster();
+        if (!os::path::isFile(versionTreeFile)) {
+            debug::info("Can't find .vault anchor in ", m_path);
+            return false;
+        }
+    }
+    return true;
+}
+
 Vault::Result Vault::backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback)
 {
     Result res;
