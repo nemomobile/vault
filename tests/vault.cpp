@@ -201,6 +201,20 @@ void do_backup()
     ensure("backup is failed", !is_failed);
 }
 
+void do_restore()
+{
+    bool is_started = false, is_failed = false;
+    ensure("no snapshot", !vlt.snapshots().isEmpty());
+    vlt.restore(vlt.snapshots().last(), home, {}, [&](const QString &, const QString &status) {
+        if (status == "fail")
+            is_failed = true;
+        else if (status == "begin")
+            is_started = true;
+    });
+    ensure("backup was not started", is_started);
+    ensure("backup is failed", !is_failed);
+}
+
 template<> template<>
 void object::test<tid_simple_blobs>()
 {
@@ -230,6 +244,12 @@ void object::test<tid_simple_blobs>()
     QString unit1_vault_blob = os::path::join(unit1_vault_path, "unit1", "blob1");
     ensure("unit1 blob1 is in the vault", os::path::exists(unit1_vault_blob));
     ensure("unit1 blob1 is symlink", os::path::isSymLink(unit1_vault_blob));
+
+    os::rm(unit1_blob);
+    ensure("unit1 blob is still here", !os::path::isFile(unit1_blob));
+    do_restore();
+    ensure("unit1 blob not restored", os::path::isFile(unit1_blob));
+
     on_exit();
 }
 
