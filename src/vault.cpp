@@ -173,8 +173,8 @@ bool Vault::init(const QVariantMap &config)
     m_vcs.commit("anchor");
     m_vcs.tag("anchor");
 
-    if (!os::path::exists(m_path + "/.git/blobs")) {
-        os::mkdir(m_path + "/.git/blobs");
+    if (!os::path::exists(os::path::join(m_path, ".git", "blobs"))) {
+        os::mkdir(os::path::join(m_path, ".git", "blobs"));
     }
     if (!writeFile(".git/vault.version", QString::number(version.repository))) {
         return false;
@@ -352,11 +352,11 @@ bool Vault::isInvalid()
 
 bool Vault::writeFile(const QString &path, const QString &content)
 {
-    QFile file(m_path + "/" + path);
+    QFile file(os::path::join(m_path, path));
     if (!content.endsWith('\n')) {
-        return os::write_file(m_path + "/" + path, content + '\n');
+        return os::write_file(os::path::join(m_path, path), content + '\n');
     }
-    return os::write_file(m_path + "/" + path, content);
+    return os::write_file(os::path::join(m_path, path), content);
 }
 
 bool Vault::setState(const QString &state)
@@ -408,11 +408,11 @@ struct Unit
 
     void linkBlob(const QString &file)
     {
-        QString blobStorage = m_vcs->path() + "/.git/blobs/";
+        QString blobStorage = os::path::join(m_vcs->path(), ".git", "blobs");
         QByteArray sha = m_vcs->hashObject(file);
         QString blobDir = blobStorage + sha.left(2);
-        QString blobFName = blobDir + "/" + sha.mid(2);
-        QString linkFName = m_vcs->path() + "/" + file;
+        QString blobFName = os::path::join(blobDir, sha.mid(2));
+        QString linkFName = os::path::join(m_vcs->path(), file);
 
         if (!os::path::exists(blobDir)) {
             os::mkdir(blobDir);
@@ -449,7 +449,7 @@ struct Unit
 
         execScript("export");
 
-        LibGit::RepoStatus status = m_vcs->status(m_root.path() + "/blobs");
+        LibGit::RepoStatus status = m_vcs->status(os::path::join(m_root.path(), "blobs"));
         for (const LibGit::RepoStatus::File &file: status.files()) {
             if (file.index == ' ' && file.workTree == 'D') {
                 m_vcs->rm(file.file);
@@ -473,7 +473,7 @@ struct Unit
 
         // add all only in data dir to avoid blobs to get into git
         // objects storage
-        m_vcs->add(m_root.path() + "/data", LibGit::AddOptions::All);
+        m_vcs->add(os::path::join(m_root.path(), "data"), LibGit::AddOptions::All);
         status = m_vcs->status(m_root.path());
         if (status.hasDirtyFiles()) {
             error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
