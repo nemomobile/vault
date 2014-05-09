@@ -1,9 +1,9 @@
 
 #include <QDir>
 
-#include <libgit/repo.h>
-#include <libgit/repostatus.h>
-#include <libgit/commit.h>
+#include <libgit/repo.hpp>
+#include <libgit/repostatus.hpp>
+#include <libgit/commit.hpp>
 
 #include "vault_config.hpp"
 #include "error.hpp"

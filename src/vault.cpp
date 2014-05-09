@@ -5,9 +5,9 @@
 #include <QDateTime>
 #include <QDir>
 
-#include <libgit/commit.h>
-#include <libgit/branch.h>
-#include <libgit/repostatus.h>
+#include <libgit/commit.hpp>
+#include <libgit/branch.hpp>
+#include <libgit/repostatus.hpp>
 
 #include "vault.hpp"
 #include "os.hpp"

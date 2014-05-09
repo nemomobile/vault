@@ -6,7 +6,7 @@
 
 #include <QString>
 
-#include <libgit/repo.h>
+#include <libgit/repo.hpp>
 
 #include <vault_config.hpp>
 
