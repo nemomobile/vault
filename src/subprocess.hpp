@@ -1,6 +1,8 @@
 #ifndef _CUTES_SUBPROCESS_HPP_
 #define _CUTES_SUBPROCESS_HPP_
 
+#include <memory>
+
 #include <QProcess>
 #include <QVariant>
 
@@ -11,7 +13,8 @@ class Process : public QObject
     Q_OBJECT
 public:
     Process()
-        : isRunning_(false)
+        : ps(new QProcess())
+        , isRunning_(false)
         , isError_(false)
     {}
 
@@ -24,37 +27,37 @@ public:
     void popen_sync(QString const &cmd, QStringList const &args)
     {
         start(cmd, args);
-        ps.waitForStarted(-1);
+        ps->waitForStarted(-1);
     }
 
     int rc() const
     {
-        return is_error() ? -1111 : ps.exitCode();
+        return is_error() ? -1111 : ps->exitCode();
     }
 
     qint64 write(QString const &data)
     {
-        return ps.write(data.toUtf8());
+        return ps->write(data.toUtf8());
     }
 
     QByteArray stdout() const
     {
-        return ps.readAllStandardOutput();
+        return ps->readAllStandardOutput();
     }
 
     QByteArray stderr() const
     {
-        return ps.readAllStandardError();
+        return ps->readAllStandardError();
     }
 
     void stdinClose()
     {
-        ps.closeWriteChannel();
+        ps->closeWriteChannel();
     }
 
     Q_PID pid() const
     {
-        return ps.pid();
+        return ps->pid();
     }
 
     void check_error(QVariantMap const &error_info);
@@ -71,7 +74,7 @@ public:
 
 private:
     
-    mutable QProcess ps;
+    mutable std::unique_ptr<QProcess> ps;
     bool isRunning_;
     bool isError_;
 

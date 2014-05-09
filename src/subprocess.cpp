@@ -10,12 +10,12 @@ void Process::start(QString const &cmd, QStringList const &args)
     if (isRunning_)
         error::raise({{"msg", "Can't start process, it is running"}
                 , {"cmd", cmd}, {"args", QVariant(args)}});
-    connect(&ps, static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>
+    connect(ps.get(), static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>
             (&QProcess::finished), this, &Process::onFinished);
-    connect(&ps, static_cast<void (QProcess::*)(QProcess::ProcessError)>
+    connect(ps.get(), static_cast<void (QProcess::*)(QProcess::ProcessError)>
             (&QProcess::error), this, &Process::onError);
     isError_ = false;
-    ps.start(cmd, args);
+    ps->start(cmd, args);
 }
 
 namespace {
@@ -36,7 +36,7 @@ QString Process::errorInfo() const
     if (isRunning_ || !rc())
         return QString();
     QString res;
-    QDebug(&res) << errorNames[ps.error()] << ps.exitStatus();
+    QDebug(&res) << errorNames[ps->error()] << ps->exitStatus();
     return res;
 }
 
@@ -56,9 +56,9 @@ void Process::onFinished(int res, QProcess::ExitStatus status)
 
 bool Process::wait(int timeout)
 {
-    auto res = (ps.state() == QProcess::NotRunning)
-        || ps.waitForFinished(timeout)
-        || (ps.state() == QProcess::NotRunning);
+    auto res = (ps->state() == QProcess::NotRunning)
+        || ps->waitForFinished(timeout)
+        || (ps->state() == QProcess::NotRunning);
     isRunning_ = !res;
     return res;
 }
@@ -68,8 +68,8 @@ bool Process::is_error() const
     if (isError_)
         return true;
 
-    auto e = ps.error();
-    auto status = ps.exitStatus();
+    auto e = ps->error();
+    auto status = ps->exitStatus();
     return (status == QProcess::NormalExit
             && (e == QProcess::UnknownError
                 || (!isRunning_ && e == QProcess::Timedout))
@@ -82,8 +82,8 @@ void Process::check_error(QVariantMap const &error_info)
     if (!rc())
         return;
     QVariantMap err = {{"msg", "Process error"}
-                       , {"cmd", ps.program()}
-                       , {"args", QVariant(ps.arguments())}
+                       , {"cmd", ps->program()}
+                       , {"args", QVariant(ps->arguments())}
                        , {"rc", rc()}
                        , {"stderr", stderr()}
                        , {"stdout", stdout()}
