@@ -326,7 +326,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
     }
 
     for (const QString &unit: usedUnits) {
-        if (restoreUnit(unit, progress)) {
+        if (restoreUnit(home, unit, progress)) {
             res.failedUnits.removeOne(unit);
             res.succededUnits << unit;
         }
@@ -395,8 +395,9 @@ bool Vault::setState(const QString &state)
 
 struct Unit
 {
-    Unit(const QString &unit, LibGit::Repo *vcs, const config::Unit &config)
+    Unit(const QString &unit, const QString &home, LibGit::Repo *vcs, const config::Unit &config)
         : m_unit(unit)
+        , m_home(home)
         , m_root(QDir(os::path::join(vcs->path(), unit)))
         , m_vcs(vcs)
         , m_config(config)
@@ -463,9 +464,8 @@ struct Unit
         m_vcs->add(file);
     }
 
-    void backup(const QString &home)
+    void backup()
     {
-        m_home = home;
         QString name = m_config.name();
 
         // cleanup directories for data and blobs in
@@ -539,8 +539,8 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
 
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs, config().units().value(unit));
-        u.backup(home);
+        Unit u(unit, home, &m_vcs, config().units().value(unit));
+        u.backup();
         callback(unit, "ok");
     } catch (error::Error err) {
         debug::error(err.what(), "\n");
@@ -553,11 +553,11 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
     return true;
 }
 
-bool Vault::restoreUnit(const QString &unit, const ProgressCallback &callback)
+bool Vault::restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
 {
     try {
         callback(unit, "begin");
-        Unit u(unit, &m_vcs, config().units().value(unit));
+        Unit u(unit, home, &m_vcs, config().units().value(unit));
         u.restore();
         callback(unit, "ok");
     } catch (error::Error err) {
