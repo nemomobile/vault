@@ -403,8 +403,8 @@ bool Vault::setState(const QString &state)
 struct Unit
 {
     Unit(const QString &unit, const QString &home, LibGit::Repo *vcs, const config::Unit &config)
-        : m_unit(unit)
-        , m_home(home)
+        : m_home(home)
+        , m_unit(unit)
         , m_root(QDir(os::path::join(vcs->path(), unit)))
         , m_vcs(vcs)
         , m_config(config)
