@@ -21,10 +21,10 @@ using LibGit::CleanOptions;
 using LibGit::ResetOptions;
 using LibGit::CheckoutOptions;
 
-static const struct {
-    int tree;
-    int repository;
-} version = { 2, 2 };
+namespace version {
+    static const int tree = 2;
+    static const int repository = 2;
+}
 
 namespace filenames {
     static const char *message = ".message";
@@ -180,7 +180,7 @@ bool Vault::init(const QVariantMap &config)
     if (!writeFile(".git/info/exclude", ".vault.*")) {
         return false;
     }
-    if (!writeFile(filenames::version::tree, QString::number(version.tree))) {
+    if (!writeFile(filenames::version::tree, QString::number(version::tree))) {
         return false;
     }
     m_vcs.add(filenames::version::tree);
@@ -190,7 +190,7 @@ bool Vault::init(const QVariantMap &config)
     if (!os::path::exists(m_blobStorage)) {
         os::mkdir(m_blobStorage);
     }
-    if (!writeFile(filenames::version::repository, QString::number(version.repository))) {
+    if (!writeFile(filenames::version::repository, QString::number(version::repository))) {
         return false;
     }
 
