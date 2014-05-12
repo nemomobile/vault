@@ -26,6 +26,15 @@ static const struct {
     int repository;
 } version = { 2, 2 };
 
+namespace filenames {
+    static const char *message = ".message";
+    namespace version {
+        static const char *tree = ".vault";
+        static const char *repository = ".git/vault.version";
+    }
+    static const char *state = ".vault.state";
+}
+
 
 Snapshot::Snapshot(const LibGit::Tag &tag)
         : m_tag(tag)
@@ -171,17 +180,17 @@ bool Vault::init(const QVariantMap &config)
     if (!writeFile(".git/info/exclude", ".vault.*")) {
         return false;
     }
-    if (!writeFile(".vault", QString::number(version.tree))) {
+    if (!writeFile(filenames::version::tree, QString::number(version.tree))) {
         return false;
     }
-    m_vcs.add(".vault");
+    m_vcs.add(filenames::version::tree);
     m_vcs.commit("anchor");
     m_vcs.tag("anchor");
 
     if (!os::path::exists(m_blobStorage)) {
         os::mkdir(m_blobStorage);
     }
-    if (!writeFile(".git/vault.version", QString::number(version.repository))) {
+    if (!writeFile(filenames::version::repository, QString::number(version.repository))) {
         return false;
     }
 
@@ -199,9 +208,7 @@ bool Vault::ensureValid()
         return false;
     }
 
-    // TODO there should not be hard-coded file names and each file
-    // should have explanatory alias
-    auto versionTreeFile = os::path::join(m_path, ".vault");
+    auto versionTreeFile = os::path::join(m_path, filenames::version::tree);
     if (!os::path::isFile(versionTreeFile)) {
         resetMaster();
         if (!os::path::isFile(versionTreeFile)) {
@@ -245,8 +252,8 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
     qDebug()<<timeTag<<message;
     QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
-    writeFile(".message", msg);
-    m_vcs.add(".message");
+    writeFile(filenames::message, msg);
+    m_vcs.add(filenames::message);
     LibGit::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
     commit.addNote(message);
     tagSnapshot(timeTag);
@@ -370,7 +377,7 @@ bool Vault::isInvalid()
         return true;
     }
 
-    QString anchor(os::path::join(m_path, ".vault"));
+    QString anchor(os::path::join(m_path, filenames::version::tree));
     if (!os::path::isFile(anchor)) {
         resetMaster();
         if (!os::path::isFile(anchor))
@@ -390,7 +397,7 @@ bool Vault::writeFile(const QString &path, const QString &content)
 
 bool Vault::setState(const QString &state)
 {
-    return writeFile(".vault.state", state);
+    return writeFile(filenames::state, state);
 }
 
 struct Unit
