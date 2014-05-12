@@ -523,8 +523,8 @@ struct Unit
         execScript("import");
     }
 
-    QString m_home;
     QString m_unit;
+    QString m_home;
     QDir m_root;
     LibGit::Repo *m_vcs;
     QString m_blobs;
