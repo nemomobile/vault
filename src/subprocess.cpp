@@ -101,11 +101,27 @@ QByteArray Process::check_output
     return stdout();
 }
 
+int Process::check_call
+(QString const &cmd, QStringList const &args, QVariantMap const &error_info)
+{
+    start(cmd, args);
+    wait(-1);
+    check_error(error_info);
+    return rc();
+}
+
 QByteArray check_output(QString const &cmd, QStringList const &args
                         , QVariantMap const &error_info)
 {
     Process p;
     return p.check_output(cmd, args, error_info);
+}
+
+int check_call(QString const &cmd, QStringList const &args
+               , QVariantMap const &error_info)
+{
+    Process p;
+    return p.check_call(cmd, args, error_info);
 }
 
 }

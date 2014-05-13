@@ -18,6 +18,12 @@ public:
         , isError_(false)
     {}
 
+    Process(Process &&from)
+        : ps(std::move(from.ps))
+        , isRunning_(from.isRunning_)
+        , isError_(from.isError_)
+    {}
+
     void start(QString const &, QStringList const &);
 
     bool wait(int timeout);
@@ -72,6 +78,12 @@ public:
         return check_output(cmd, args, QVariantMap());
     }
 
+    int check_call(QString const &, QStringList const &, QVariantMap const &);
+    int check_call(QString const &cmd, QStringList const &args)
+    {
+        return check_call(cmd, args, QVariantMap());
+    }
+
 private:
     
     mutable std::unique_ptr<QProcess> ps;
@@ -87,6 +99,12 @@ QByteArray check_output(QString const &cmd, QStringList const &args, QVariantMap
 static inline QByteArray check_output(QString const &cmd, QStringList const &args)
 {
     return check_output(cmd, args, QVariantMap());
+}
+
+int check_call(QString const &cmd, QStringList const &args, QVariantMap const &);
+static inline int check_call(QString const &cmd, QStringList const &args)
+{
+    return check_call(cmd, args, QVariantMap());
 }
 
 
