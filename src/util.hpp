@@ -11,6 +11,7 @@
 
 #include <tuple>
 #include <memory>
+#include <array>
 
 namespace {
 
@@ -47,6 +48,14 @@ inline bool is(QString const &v)
 inline bool hasType(QVariant const &v, QMetaType::Type t)
 {
     return static_cast<QMetaType::Type>(v.type()) == t;
+}
+
+template <typename X, typename Y> X get(Y);
+
+template <>
+double get<double>(QVariant const &v)
+{
+    return v.toDouble();
 }
 
 typedef QVariantMap map_type;
@@ -117,6 +126,109 @@ template <typename T>
 T unbox(std::unique_ptr<T> p)
 {
     return std::move(*p);
+}
+
+template <typename T> struct StructTraits;
+
+template <typename FieldsT>
+struct Struct
+{
+    typedef FieldsT id_type;
+    typedef typename StructTraits<FieldsT>::type data_type;
+    static_assert(static_cast<size_t>(FieldsT::EOE) == std::tuple_size<data_type>::value
+                  , "Enum should end with EOE == tuple size");
+
+    Struct(data_type const &src) : data(src) {}
+    Struct(data_type &&src) : data(std::move(src)) {}
+
+    template <typename ... Args>
+    Struct(Args &&...args) : data(std::forward<Args>(args)...) {}
+
+    template <FieldsT Id>
+    typename std::tuple_element<static_cast<size_t>(Id), data_type>::type &get()
+    {
+        return std::get<Index<Id>::value>(data);
+    }
+
+    template <FieldsT Id>
+    typename std::tuple_element<static_cast<size_t>(Id), data_type>::type const &
+        get() const
+    {
+        return std::get<Index<Id>::value>(data);
+    }
+
+    template <FieldsT Id>
+    struct Index {
+        static_assert(Id != FieldsT::EOE, "Should not be EOE");
+        static const size_t value = static_cast<size_t>(Id);
+    };
+
+    template <size_t Index>
+    struct Enum {
+        static const FieldsT value = static_cast<FieldsT>(Index);
+        static_assert(value < FieldsT::EOE, "Should be < EOE");
+    };
+
+private:
+    data_type data;
+};
+
+template <typename ...Args>
+constexpr size_t count(Args &&...)
+{
+    return sizeof...(Args);
+}
+
+#define STRUCT_NAMES(Id, id_names...)           \
+    template <Id i>                             \
+    static char const * name()                                    \
+    {                                                             \
+        auto const end = static_cast<size_t>(Id::EOE);                  \
+        static const std::array<char const *, end> names{{id_names}};   \
+        static_assert(count(id_names) == end, "Check names count");     \
+        return names[Struct<Id>::Index<i>::value];                      \
+    }
+
+namespace debug {
+
+template <size_t N>
+struct StructDump
+{
+    template <typename FieldsT>
+    static void out(QDebug &d, Struct<FieldsT> const &v)
+    {
+        static auto const end = (size_t)FieldsT::EOE;
+        static auto const id = Struct<FieldsT>::template Enum<end - N>::value;
+        static auto const *name(StructTraits<FieldsT>::template name<id>());
+        auto const &r = v.template get<id>();
+        d << name << "=" << r << ", ";
+        StructDump<N - 1>::out(d, v);
+    }
+};
+
+template <>
+struct StructDump<1>
+{
+    template <typename FieldsT>
+    static void out(QDebug &d, Struct<FieldsT> const &v)
+    {
+        static auto const end = (size_t)FieldsT::EOE;
+        static auto const id = Struct<FieldsT>::template Enum<end - 1>::value;
+        static auto const *name(StructTraits<FieldsT>::template name<id>());
+        auto const &r = v.template get<id>();
+        d << name << "=" << r;
+    }
+};
+
+template <typename FieldsT>
+QDebug & operator <<(QDebug &d, Struct<FieldsT> const &v)
+{
+    static const auto index = (size_t)FieldsT::EOE;
+    static_assert(index != 0, "Struct should");
+    d << "("; StructDump<index>::out(d, v); d << ")";
+    return d;
+}
+
 }
 
 namespace util {
