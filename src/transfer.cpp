@@ -80,10 +80,9 @@ private:
 
 static inline QString str(CardTransfer::Action a)
 {
-    size_t off = static_cast<size_t>(a);
     std::array<char const *, (size_t)CardTransfer::ActionsEnd> names
         = {{"export", "import"}};
-    return (a != CardTransfer::ActionsEnd) ? names[off] : "?";
+    return names.at(static_cast<size_t>(a));
 }
 
 static QDebug & operator <<(QDebug &d, CardTransfer::Action a)
@@ -216,7 +215,7 @@ void CardTransfer::validateDump(QString const &archive, QVariantMap const &err)
 
     auto out = str(subprocess::check_output
                    ("tar", {{"-tf", archive}}, {{"reason", "Archive"}}));
-    auto lines = out.split("\n").filter(QRegExp("^.+$"));
+    auto lines = filterEmpty(out.split("\n"));
     for (auto it = lines.begin(); it != lines.end(); ++it) {
         auto const &fname = *it;
         if (fname.left(prefix_len) != prefix) {
@@ -232,20 +231,20 @@ void CardTransfer::validateDump(QString const &archive, QVariantMap const &err)
                     , {"dump", archive}}));
 }
 
-void CardTransfer::exportStorage(CardTransfer::progressCallback reply)
+void CardTransfer::exportStorage(CardTransfer::progressCallback onProgress)
 {
     auto tag_fname = vault::fileName(File::State);
     QStringList options = {"-cf", dst_, "-C", src_, ".git", tag_fname};
-    reply({{"type", "stage"}, {"stage", "Copy"}});
+    onProgress({{"type", "stage"}, {"stage", "Copy"}});
     try {
-        IoCmd cmd("tar", options, reply, space_required_, dst_);
+        IoCmd cmd("tar", options, onProgress, space_required_, dst_);
         auto ps = doIO(cmd);
         ps.check_error({{"reason", "Export"}});
 
-        reply({{"type", "stage"}, {"stage", "Flush"}});
+        onProgress({{"type", "stage"}, {"stage", "Flush"}});
         subprocess::check_call("sync", {}, {{"reason", "Export"}});
 
-        reply({{"type", "stage"}, {"stage", "Validate"}});
+        onProgress({{"type", "stage"}, {"stage", "Validate"}});
         validateDump(dst_, {{"reason", "Export"}});
 
     } catch (...) {
@@ -255,9 +254,9 @@ void CardTransfer::exportStorage(CardTransfer::progressCallback reply)
     }
 }
 
-void CardTransfer::importStorage(CardTransfer::progressCallback reply)
+void CardTransfer::importStorage(CardTransfer::progressCallback onProgress)
 {
-    trace(Level::Debug, reply);
+    trace(Level::Debug, onProgress);
     auto root = getVault()->root();
     if (dst_ != root)
         error::raise({{"reason", "Logic"}, {"message", "Invalid destination"}
@@ -267,7 +266,7 @@ void CardTransfer::importStorage(CardTransfer::progressCallback reply)
         error::raise({{"reason", "Logic"}, {"message", "Invalid vault"}
                 , {"path", root}});
 
-    reply({{"type", "stage"}, {"stage", "Validate"}});
+    onProgress({{"type", "stage"}, {"stage", "Validate"}});
     validateDump(src_, {{"reason", "BadSource"}});
     trace(Level::Debug, "Clean destination tree");
     os::rmtree(dst_);
@@ -279,8 +278,8 @@ void CardTransfer::importStorage(CardTransfer::progressCallback reply)
     try {
         os::mkdir(dst_);
         QStringList options = {"-xpf", src_, "-C", dst_};
-        reply({{"type", "stage"}, {"stage", "Copy"}});
-        IoCmd cmd("tar", options, reply, space_required_, dst_);
+        onProgress({{"type", "stage"}, {"stage", "Copy"}});
+        IoCmd cmd("tar", options, onProgress, space_required_, dst_);
         auto res = doIO(cmd);
         res.check_error({{"reason", "Archive"}});
     } catch(...) {
@@ -290,7 +289,7 @@ void CardTransfer::importStorage(CardTransfer::progressCallback reply)
     }
 }
 
-void CardTransfer::execute(CardTransfer::progressCallback reply)
+void CardTransfer::execute(CardTransfer::progressCallback onProgress)
 {
     // TODO trace(Level::Debug, "Export/import", "msg:", msg);
 
@@ -300,14 +299,14 @@ void CardTransfer::execute(CardTransfer::progressCallback reply)
                 , {"src", src_}});
 
     estimateSpace();
-    reply({{"type", "estimated_size"}, {"size", space_required_}});
+    onProgress({{"type", "estimated_size"}, {"size", space_required_}});
 
     switch (action_) {
     case Action::Export:
-        exportStorage(reply);
+        exportStorage(onProgress);
         break;
     case Action::Import:
-        importStorage(reply);
+        importStorage(onProgress);
         break;
     default:
         error::raise({{"reason", "Logic"}, {"message", "Unknown action"}
