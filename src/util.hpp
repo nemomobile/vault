@@ -50,7 +50,7 @@ inline bool hasType(QVariant const &v, QMetaType::Type t)
     return static_cast<QMetaType::Type>(v.type()) == t;
 }
 
-template <typename X, typename Y> X get(Y);
+template <typename X, typename Y> X get(Y const &);
 
 template <>
 double get<double>(QVariant const &v)
