@@ -35,75 +35,6 @@ void trace(Level l, Args &&...args)
     debug::print_ge(l, "Vault.transfer:", std::forward<Args>(args)...);
 }
 
-enum class Action { Export, Import };
-
-static inline QString str(Action a)
-{
-    return (a == Action::Export) ? "export" : "import";
-}
-
-static QDebug & operator <<(QDebug &d, Action a)
-{
-    d << str(a);
-    return d;
-}
-
-struct Archive
-{
-
-    Archive(Action a)
-        : action(a)
-        , space_free(0)
-        , space_required(0)
-    {}
-
-    Action action;
-    QString src;
-    QString dst;
-    double space_free;
-    double space_required;
-};
-
-std::unique_ptr<Archive> 
-export_import_prepare(Action action, QString const &dump_path)
-{
-    trace(Level::Debug, "Prepare", action);
-
-    if (!hasType(dump_path, QMetaType::QString))
-        error::raise({{"reason", "Logic"}
-                , {"message", "Export/import path is bad"}
-                , {"path", dump_path}});
-
-    auto path = os::path::join(dump_path, "Backup.tar");
-    auto res = cor::make_unique<Archive>(action);
-    auto storage = getVault();
-    QString dst_dir;
-    if (action == Action::Import) {
-        if (!os::path::exists(path))
-            error::raise({{"reason", "NoSource"}
-                    , {"message", "There is nothing to import"}
-                    , {"path", path}});
-        res->src = path;
-        dst_dir = storage->root();
-        res->dst = dst_dir;
-        if (!os::path::isDir(dst_dir))
-            dst_dir = os::path::dirName(dst_dir);
-    } else if (action == Action::Export) {
-        if (!os::path::exists(storage->root()) || !storage->ensureValid())
-            error::raise({{"reason", "NoSource"}, {"message", "Invalid vault"}
-                    , {"path", storage->root()}});
-        res->src = storage->root();
-        res->dst = path;
-        dst_dir = os::path::dirName(path);
-    } else {
-        error::raise({{"reason", "Logic"}, {"message", "Unknown action"}
-                , {"action", str(action)}});
-    }
-    res->space_free = os::diskFree(dst_dir);
-    trace(Level::Debug, "dst=", dst_dir, "free space=", res->space_free);
-    return res;
-}
-
 enum class Io { Exec, Options, OnProgress, EstSize, Dst, EOE };
 template <> struct StructTraits<Io>
 {
@@ -116,7 +47,91 @@ template <> struct StructTraits<Io>
 
 typedef Struct<Io> IoCmd;
 
-Process do_io(IoCmd const &info)
+class CardTransfer : public QObject
+{
+    Q_OBJECT
+    Q_ENUMS(Actions)
+public:
+    enum Action { Export, Import, ActionsEnd };
+
+    CardTransfer()
+        : action_(ActionsEnd)
+        , space_free_(0)
+        , space_required_(0)
+    {}
+
+    typedef std::function<void(QVariantMap&&)> progressCallback;
+    void init(Action, QString const &);
+    void execute(progressCallback);
+
+private:
+    static Process doIO(IoCmd const &info);
+    static void validateDump(QString const &archive, QVariantMap const &err);
+    void estimateSpace();
+    void exportStorage(progressCallback);
+    void importStorage(progressCallback);
+
+    Action action_;
+    QString src_;
+    QString dst_;
+    double space_free_;
+    double space_required_;
+};
+
+static inline QString str(CardTransfer::Action a)
+{
+    size_t off = static_cast<size_t>(a);
+    std::array<char const *, (size_t)CardTransfer::ActionsEnd> names
+        = {{"export", "import"}};
+    return (a != CardTransfer::ActionsEnd) ? names[off] : "?";
+}
+
+static QDebug & operator <<(QDebug &d, CardTransfer::Action a)
+{
+    d << str(a);
+    return d;
+}
+
+void CardTransfer::init(Action action, QString const &dump_path)
+{
+    trace(Level::Debug, "Prepare", action);
+
+    if (!hasType(dump_path, QMetaType::QString))
+        error::raise({{"reason", "Logic"}
+                , {"message", "Export/import path is bad"}
+                , {"path", dump_path}});
+
+    auto path = os::path::join(dump_path, "Backup.tar");
+    auto storage = getVault();
+    QString dst_dir;
+    if (action == Action::Import) {
+        if (!os::path::exists(path))
+            error::raise({{"reason", "NoSource"}
+                    , {"message", "There is nothing to import"}
+                    , {"path", path}});
+        src_ = path;
+        dst_dir = storage->root();
+        dst_ = dst_dir;
+        if (!os::path::isDir(dst_dir))
+            dst_dir = os::path::dirName(dst_dir);
+    } else if (action == Action::Export) {
+        if (!os::path::exists(storage->root()) || !storage->ensureValid())
+            error::raise({{"reason", "NoSource"}, {"message", "Invalid vault"}
+                    , {"path", storage->root()}});
+        src_ = storage->root();
+        dst_ = path;
+        dst_dir = os::path::dirName(path);
+    } else {
+        error::raise({{"reason", "Logic"}, {"message", "Unknown action"}
+                , {"action", str(action)}});
+    }
+    space_free_ = os::diskFree(dst_dir);
+    action_ = action;
+    trace(Level::Debug, "dst=", dst_dir, "free space=", space_free_);
+}
+
+
+Process CardTransfer::doIO(IoCmd const &info)
 {
     debug::debug("Io", info);
     Process ps;
@@ -162,37 +177,35 @@ Process do_io(IoCmd const &info)
     return std::move(ps);
 }
 
-std::unique_ptr<Archive> estimate_space(std::unique_ptr<Archive> msg)
+void CardTransfer::estimateSpace()
 {
-    if (!msg->space_required) {
+    if (!space_required_) {
         trace(Level::Debug, "Check required space");
-        auto is_src_dir = os::path::isDir(msg->src);
+        auto is_src_dir = os::path::isDir(src_);
         // if source is directory - it is .vault, so only .git is packed
-        auto real_src = is_src_dir ? os::path::join(msg->src, ".git") : msg->src;
-        msg->space_required = get<double>
-            (os::du(real_src, {{"summarize", is_src_dir}}));
-        trace(Level::Debug, "du=", msg->space_required);
+        auto real_src = is_src_dir ? os::path::join(src_, ".git") : src_;
+        space_required_ = get<double>(os::du(real_src, {{"summarize", is_src_dir}}));
+        trace(Level::Debug, "du=", space_required_);
         if (!is_src_dir) {
             // empiric multiplier: unpacked
             // files can take more space,
             // it depends on fs
-            msg->space_required *= 1.2;
+            space_required_ *= 1.2;
         }
-        if (os::path::exists(msg->dst)) {
+        if (os::path::exists(dst_)) {
             auto to_be_freed = get<double>
-                (os::du(msg->dst, {{"summarize", !is_src_dir}}));
-            msg->space_free += to_be_freed;
+                (os::du(dst_, {{"summarize", !is_src_dir}}));
+            space_free_ += to_be_freed;
         }
-        trace(Level::Debug, "total required=", msg->space_required
-              , "free=", msg->space_free);
+        trace(Level::Debug, "total required=", space_required_
+              , "free=", space_free_);
     }
-    if (msg->space_required > msg->space_free)
-        error::raise({{"reason", "NoSpace"}, {"free", msg->space_free}
-                     , {"required", msg->space_required}});
-    return msg;
+    if (space_required_ > space_free_)
+        error::raise({{"reason", "NoSpace"}, {"free", space_free_}
+                     , {"required", space_required_}});
 }
 
-void validate_storage_dump(QString const &archive, QVariantMap const &err)
+void CardTransfer::validateDump(QString const &archive, QVariantMap const &err)
 {
     trace(Level::Debug, "Validate dump", archive);
     QString prefix(".git/");
@@ -219,88 +232,88 @@ void validate_storage_dump(QString const &archive, QVariantMap const &err)
                     , {"dump", archive}}));
 }
 
-void export_storage(std::unique_ptr<Archive> msg
-                    , std::function<void(QVariantMap&&)> reply)
+void CardTransfer::exportStorage(CardTransfer::progressCallback reply)
 {
     auto tag_fname = vault::fileName(File::State);
-    QStringList options = {"-cf", msg->dst, "-C", msg->src, ".git", tag_fname};
+    QStringList options = {"-cf", dst_, "-C", src_, ".git", tag_fname};
     reply({{"type", "stage"}, {"stage", "Copy"}});
     try {
-        IoCmd cmd("tar", options, reply, msg->space_required, msg->dst);
-        auto ps = do_io(cmd);
+        IoCmd cmd("tar", options, reply, space_required_, dst_);
+        auto ps = doIO(cmd);
         ps.check_error({{"reason", "Export"}});
 
         reply({{"type", "stage"}, {"stage", "Flush"}});
         subprocess::check_call("sync", {}, {{"reason", "Export"}});
 
         reply({{"type", "stage"}, {"stage", "Validate"}});
-        validate_storage_dump(msg->dst, {{"reason", "Export"}});
+        validateDump(dst_, {{"reason", "Export"}});
 
     } catch (...) {
-        if (os::path::exists(msg->dst))
-            os::rm(msg->dst);
+        if (os::path::exists(dst_))
+            os::rm(dst_);
         throw;
     }
 }
 
-void import_storage(std::unique_ptr<Archive> msg
-                    , std::function<void(QVariantMap&&)> reply)
+void CardTransfer::importStorage(CardTransfer::progressCallback reply)
 {
     trace(Level::Debug, reply);
     auto root = getVault()->root();
-    if (msg->dst != root)
+    if (dst_ != root)
         error::raise({{"reason", "Logic"}, {"message", "Invalid destination"}
-                     , {"path", msg->dst}});
+                     , {"path", dst_}});
 
     if (os::path::exists(root) && !getVault()->ensureValid())
         error::raise({{"reason", "Logic"}, {"message", "Invalid vault"}
                 , {"path", root}});
 
     reply({{"type", "stage"}, {"stage", "Validate"}});
-    validate_storage_dump(msg->src, {{"reason", "BadSource"}});
+    validateDump(src_, {{"reason", "BadSource"}});
     trace(Level::Debug, "Clean destination tree");
-    os::rmtree(msg->dst);
+    os::rmtree(dst_);
     invalidateVault();
-    if (os::path::exists(msg->dst))
+    if (os::path::exists(dst_))
         error::raise({{"reason", "unknown"}, {"message", "Can't remove destination"}
-                , {"dst", msg->dst}});
+                , {"dst", dst_}});
 
     try {
-        os::mkdir(msg->dst);
-        QStringList options = {"-xpf", msg->src, "-C", msg->dst};
+        os::mkdir(dst_);
+        QStringList options = {"-xpf", src_, "-C", dst_};
         reply({{"type", "stage"}, {"stage", "Copy"}});
-        IoCmd cmd("tar", options, reply, msg->space_required, msg->dst);
-        auto res = do_io(cmd);
+        IoCmd cmd("tar", options, reply, space_required_, dst_);
+        auto res = doIO(cmd);
         res.check_error({{"reason", "Archive"}});
     } catch(...) {
-        if (os::path::exists(msg->dst))
-            os::rmtree(msg->dst);
+        if (os::path::exists(dst_))
+            os::rmtree(dst_);
         throw;
     }
 }
 
-void export_import(std::unique_ptr<Archive> msg
-                   , std::function<void(QVariantMap&&)> reply)
+void CardTransfer::execute(CardTransfer::progressCallback reply)
 {
-    trace(Level::Debug, "Export/import", "msg:", msg);
+    // TODO trace(Level::Debug, "Export/import", "msg:", msg);
 
-    if (!os::path::exists(msg->src))
+    if (!os::path::exists(src_))
         error::raise({{"reason", "Logic"}
                 , {"message", "Source does not exist"}
-                , {"src", msg->src}});
+                , {"src", src_}});
 
-    msg = estimate_space(std::move(msg));
-    reply({{"type", "estimated_size"}, {"size", msg->space_required}});
+    estimateSpace();
+    reply({{"type", "estimated_size"}, {"size", space_required_}});
 
-    switch (msg->action) {
+    switch (action_) {
     case Action::Export:
-        export_storage(std::move(msg), reply);
+        exportStorage(reply);
         break;
     case Action::Import:
-        import_storage(std::move(msg), reply);
+        importStorage(reply);
         break;
     default:
         error::raise({{"reason", "Logic"}, {"message", "Unknown action"}
-                , {"action", str(msg->action)}});
+                , {"action", str(action_)}});
+        break;
     }
 }
+
+#include "transfer.moc"
