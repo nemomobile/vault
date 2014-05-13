@@ -13,6 +13,20 @@ enum class Level { Debug = 1, Info, Warning, Error, Critical };
 
 QDebug stream();
 
+template <typename T>
+QDebug & operator << (QDebug &d, T const &v)
+{
+    d << v;
+    return d;
+}
+
+template <typename T, typename ... Args>
+QDebug & operator << (QDebug &d, std::function<T(Args...)> const &)
+{
+    d << "std::function<...>";
+    return d;
+}
+
 static inline void print(QDebug &&d)
 {
     QDebug dd(std::move(d));
