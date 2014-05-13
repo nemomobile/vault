@@ -203,11 +203,11 @@ string_map_type stat(QString const &path, QVariantMap &&options)
 
 
     string_map_type res;
-    size_t i = 0;
+    int i = 0;
     auto const &fields = is(options["filesystem"]) ? filesystem_fields : entry_fields;
     for (auto it = data.begin(); it != data.end(); ++it) {
         auto value = *it;
-        auto c = requested[(int)i++];
+        auto c = requested[i++];
         auto name = fields[c];
         if (name.isEmpty())
             error::raise({{"msg", "Can't find field name"}, {"id", c}});
