@@ -40,3 +40,12 @@ set_target_properties(vault-unit PROPERTIES
   VERSION ${VERSION}
   )
 install(TARGETS vault-unit DESTINATION ${DST_LIB})
+
+add_library(vault-transfer SHARED transfer.cpp)
+qt5_use_modules(vault-transfer Core)
+target_link_libraries(vault-transfer ${COR_LIBRARIES} cutespp vault-core)
+set_target_properties(vault-transfer PROPERTIES
+  SOVERSION 0
+  VERSION ${VERSION}
+  )
+install(TARGETS vault-transfer DESTINATION ${DST_LIB})
