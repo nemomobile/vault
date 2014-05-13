@@ -17,6 +17,18 @@
 
 namespace vault {
 
+static const QMap<File, QString> fileNames = {
+    {File::Message, ".message"}
+    , {File::VersionTree, ".vault"}
+    , {File::VersionRepo, os::path::join(".git", "vault.version")}
+    , {File::State, ".vault.state"}
+};
+
+QString fileName(File id)
+{
+    return fileNames[id];
+};
+
 using LibGit::CleanOptions;
 using LibGit::ResetOptions;
 using LibGit::CheckoutOptions;

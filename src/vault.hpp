@@ -12,6 +12,10 @@
 
 namespace vault {
 
+enum class File { Message, VersionTree, VersionRepo, State };
+
+QString fileName(File);
+
 class Snapshot
 {
 public:
