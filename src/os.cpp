@@ -133,8 +133,8 @@ size_t get_block_size(QString const &cmd_name)
 
 QList<QVariantMap> mount()
 {
-    static const QStringList names = {"src", "dst", "type", "options"};
-    auto line2obj = [&names](QString const &line) {
+    auto line2obj = [](QString const &line) {
+        static const QStringList names = {"src", "dst", "type", "options"};
         auto fields = line.split(QRegExp("\\s+"));
         return map(util::zip(names, fields));
     };
