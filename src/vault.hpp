@@ -60,7 +60,6 @@ public:
     bool writeFile(const QString &file, const QString &content);
 
     static void execute(const QVariantMap &options);
-    QString getRoot() const { return m_path; }
     bool ensureValid();
 
 private:
