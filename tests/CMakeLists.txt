@@ -30,3 +30,5 @@ add_executable(unit1_vault_test unit1_vault_test.cpp)
 target_link_libraries(unit1_vault_test vault-unit)
 qt5_use_modules(unit1_vault_test Core)
 add_dependencies(check unit1_vault_test)
+
+add_subdirectory(qml)
