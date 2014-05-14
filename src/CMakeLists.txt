@@ -1,11 +1,11 @@
 pkg_check_modules(COR cor REQUIRED)
-pkg_check_modules(gittin gittin REQUIRED)
+pkg_check_modules(GITTIN gittin REQUIRED)
 
 include_directories(
-  ${COR_INCLUDE_DIRS} ${libgit_INCLUDE_DIRS}
+  ${COR_INCLUDE_DIRS} ${GITTIN_INCLUDE_DIRS}
 )
 link_directories(
-  ${COR_LIBRARY_DIRS} ${libgit_LIBRARY_DIRS}
+  ${COR_LIBRARY_DIRS} ${GITTIN_LIBRARY_DIRS}
 )
 
 set(CMAKE_AUTOMOC TRUE)
@@ -21,7 +21,7 @@ install(TARGETS cutespp DESTINATION ${DST_LIB})
 
 add_library(vault-core SHARED vault.cpp vault_config.cpp)
 qt5_use_modules(vault-core Core)
-target_link_libraries(vault-core cutespp ${gittin_LIBRARIES})
+target_link_libraries(vault-core cutespp ${GITTIN_LIBRARIES})
 set_target_properties(vault-core PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
