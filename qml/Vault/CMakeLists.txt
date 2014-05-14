@@ -6,7 +6,7 @@ find_package(Qt5Qml REQUIRED)
 
 add_library(vault-declarative SHARED plugin.cpp vault.cpp)
 qt5_use_modules(vault-declarative Qml)
-target_link_libraries(vault-declarative vault-core)
+target_link_libraries(vault-declarative vault-core vault-transfer)
 
 set_target_properties(vault-declarative PROPERTIES
   SOVERSION 0

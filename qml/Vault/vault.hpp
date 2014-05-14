@@ -14,6 +14,21 @@ class Vault : public QObject
     Q_PROPERTY(QString root READ root WRITE setRoot NOTIFY rootChanged)
     Q_PROPERTY(QString backupHome READ backupHome WRITE setBackupHome NOTIFY backupHomeChanged)
 public:
+    enum ImportExportAction {
+        Export,
+        Import
+    };
+    Q_ENUMS(ImportExportAction);
+    enum Operation {
+        Connect,
+        Backup,
+        Restore,
+        RemoveSnapshot,
+        ExportImportPrepare,
+        ExportImportExecute
+    }
+    Q_ENUMS(Operation);
+
     explicit Vault(QObject *parent = nullptr);
     ~Vault();
 
@@ -30,17 +45,16 @@ public:
     Q_INVOKABLE QStringList units() const;
     Q_INVOKABLE void resetHead();
     Q_INVOKABLE void removeSnapshot(const QString &name);
-    Q_INVOKABLE void exportImportPrepare();
+    Q_INVOKABLE void exportImportPrepare(ImportExportAction action, const QString &path);
+    Q_INVOKABLE void exportImportExecute();
 
 signals:
     void rootChanged();
     void backupHomeChanged();
 
-    void connectDone();
-    void backupDone();
-    void restoreDone();
-    void progress(const QString &unit, const QString &status);
-    void error(const QString &error);
+    void done(Operation operation);
+    void progress(Operation operation, const QVariantMap &data);
+    void error(Operation operation, const QString &error);
 
 private:
     void initWorker(bool reload);

@@ -3,6 +3,7 @@
 #include "src/debug.hpp"
 #include "src/vault.hpp"
 #include "src/vault_config.hpp"
+#include "transfer.hpp"
 
 #include "vault.hpp"
 
@@ -13,12 +14,14 @@ public:
     Worker()
         : QObject()
         , m_vault(nullptr)
+        , m_transfer(nullptr)
     {
     }
 
     ~Worker()
     {
         delete m_vault;
+        delete m_transfer;
     }
 
     Q_INVOKABLE void init(const QString &root)
@@ -45,18 +48,18 @@ public:
     {
         debug::debug("Restore: home", home);
         m_vault->restore(tag, home, units, [this](const QString unit, const QString &status) {
-            emit progress(unit, status);
+            emit progress(Vault::Restore, {{"unit", unit}, {"status", status}});
         });
-        emit restoreDone();
+        emit done(Vault::Restore);
     }
 
     Q_INVOKABLE void backup(const QString &home, const QStringList &units, const QString &message)
     {
         debug::debug("Backup: home", home);
         m_vault->backup(home, units, message, [this](const QString unit, const QString &status) {
-            emit progress(unit, status);
+            emit progress(Vault::Backup, {{"unit", unit}, {"status", status}});
         });
-        emit backupDone();
+        emit done(Vault::Backup);
     }
 
     QStringList snapshots() const
@@ -75,18 +78,44 @@ public:
         return m_vault->clear(msg);
     }
 
-    Q_INVOKABLE void eiPrepare()
+    Q_INVOKABLE void eiPrepare(Vault::ImportExportAction action, const QString &path)
     {
+        if (!m_transfer) {
+            m_transfer = new CardTransfer;
+        }
+        try {
+            CardTransfer::Action ac = action == Vault::Import ? CardTransfer::Import : CardTransfer::Export;
+            m_transfer->init(ac, path);
+            emit done(Vault::ExportImportPrepare);
+        } catch (error::Error e) {
+            emit error(Vault::ExportImportPrepare, e.what());
+        }
+    }
 
+    Q_INVOKABLE void eiExecute()
+    {
+        if (!m_transfer) {
+            emit error(Vault::ExportImportExecute, "exportImportPrepare was not called");
+            return;
+        }
+        try {
+            m_transfer->execute([this](QVariantMap &&map) {
+                emit progress(Vault::ExportImportExecute, map);
+            });
+            emit done(Vault::ExportImportExecute);
+        } catch (error::Error e) {
+            emit error(Vault::ExportImportExecute, e.what());
+        }
     }
 
 signals:
-    void progress(const QString unit, const QString &status);
-    void backupDone();
-    void restoreDone();
+    void progress(Vault::Operation op, const QVariantMap &map);
+    void error(Vault::Operation op, const QString &error);
+    void done(Vault::Operation op);
 
 public:
     vault::Vault *m_vault;
+    CardTransfer *m_transfer;
 };
 
 
@@ -142,21 +171,21 @@ void Vault::initWorker(bool reload)
         m_workerThread.start();
         reload = false;
         connect(m_worker, &Worker::progress, this, &Vault::progress);
-        connect(m_worker, &Worker::backupDone, this, &Vault::backupDone);
-        connect(m_worker, &Worker::restoreDone, this, &Vault::restoreDone);
+        connect(m_worker, &Worker::error, this, &Vault::error);
+        connect(m_worker, &Worker::done, this, &Vault::done);
     }
     try {
         m_worker->init(m_root);
-        emit connectDone();
+        emit done(Vault::Connect);
     } catch (error::Error e) {
-        emit error(e.what());
+        emit error(Vault::Connect, e.what());
     }
 }
 
 void Vault::connectVault(bool reconnect)
 {
     if (m_worker && !reconnect) {
-        emit connectDone();
+        emit done(Vault::Connect);
         return;
     }
 
@@ -167,7 +196,7 @@ void Vault::startRestore(const QString &tag, const QStringList &units)
 {
     if (units.isEmpty()) {
         debug::info("Nothing to restore");
-        emit restoreDone();
+        emit done(Vault::Restore);
         return;
     }
 
@@ -178,7 +207,7 @@ void Vault::startBackup(const QString &message, const QStringList &units)
 {
     if (units.isEmpty()) {
         debug::info("Nothing to backup");
-        emit backupDone();
+        emit done(Vault::Backup);
         return;
     }
 
@@ -223,16 +252,21 @@ void Vault::removeSnapshot(const QString &name)
             initWorker(true);
         } catch (error::Error e) {
             debug::error("Error reconnecting", e.what());
-            emit error(e.what());
+            emit error(Vault::RemoveSnapshot, e.what());
         }
     } else {
         debug::debug("There are some snapshots, continue");
     }
 }
 
-void Vault::exportImportPrepare()
+void Vault::exportImportPrepare(ImportExportAction action, const QString &path)
 {
-    QMetaObject::invokeMethod(m_worker, "eiPrepare");
+    QMetaObject::invokeMethod(m_worker, "eiPrepare", Q_ARG(int, action), Q_ARG(QString, path));
+}
+
+void Vault::exportImportExecute()
+{
+    QMetaObject::invokeMethod(m_worker, "eiExecute");
 }
 
 #include "vault.moc"
