@@ -44,6 +44,8 @@ public:
     {
         return QFileInfo(p).symLinkTarget();
     }
+    static QString target(QString const &link);
+
     static inline bool isDir(QString const &p)
     {
         return QFileInfo(p).isDir();

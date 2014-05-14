@@ -36,6 +36,12 @@ bool path::isDescendent(QString const &p, QString const &other) {
     return true;
 }
 
+QString path::target(QString const &link)
+{
+    // TODO use c lstat+readlink
+    return str(subprocess::check_output("readlink", {link})).split('\n')[0];
+}
+
 int system(QString const &cmd, QStringList const &args)
 {
     Process p;
