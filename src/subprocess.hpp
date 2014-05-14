@@ -24,6 +24,11 @@ public:
         , isError_(from.isError_)
     {}
 
+    void setWorkingDirectory(QString const &d)
+    {
+        ps->setWorkingDirectory(d);
+    }
+
     void start(QString const &, QStringList const &);
 
     bool wait(int timeout);
