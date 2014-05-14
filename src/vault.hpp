@@ -19,9 +19,11 @@ QString fileName(File);
 class Snapshot
 {
 public:
-    Snapshot(const LibGit::Tag &commit);
+    explicit Snapshot(const LibGit::Tag &commit);
 
     inline LibGit::Tag tag() const { return m_tag; }
+
+    void remove();
 
 private:
     LibGit::Tag m_tag;
@@ -47,6 +49,7 @@ public:
     bool init(const QVariantMap &config = QVariantMap());
     Result backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback = nullptr);
     Result restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
+    Result restore(const QString &tag, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
     bool clear(const QVariantMap &options);
 
     QList<Snapshot> snapshots() const;
@@ -65,13 +68,13 @@ public:
 
     static void execute(const QVariantMap &options);
     bool ensureValid();
+    void reset(const QByteArray &treeish = QByteArray());
 
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     void tagSnapshot(const QString &msg);
-    void reset(const QByteArray &treeish = QByteArray());
     void resetMaster();
 
     const QString m_path;

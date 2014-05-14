@@ -1,0 +1,2 @@
+module Vault
+plugin vault-declarative

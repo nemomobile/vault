@@ -41,8 +41,9 @@ set(CMAKE_CXX_FLAGS
   "${CMAKE_CXX_FLAGS} -gdwarf-3"
   )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
 add_subdirectory(units)
+add_subdirectory(qml/Vault)

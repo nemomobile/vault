@@ -43,6 +43,11 @@ Snapshot::Snapshot(const LibGit::Tag &tag)
 {
 }
 
+void Snapshot::remove()
+{
+    m_tag.destroy();
+}
+
 
 
 Vault::Vault(const QString &path)
@@ -309,6 +314,12 @@ void Vault::resetMaster()
 {
     reset();
     m_vcs.checkout("master", CheckoutOptions::Force);
+}
+
+Vault::Result Vault::restore(const QString &tag, const QString &home, const QStringList &units, const ProgressCallback &callback)
+{
+    Snapshot ss(LibGit::Tag(&m_vcs, tag));
+    return restore(ss, home, units, callback);
 }
 
 Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
