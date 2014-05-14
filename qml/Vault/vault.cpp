@@ -6,16 +6,6 @@
 
 #include "vault.hpp"
 
-class Callback
-{
-public:
-    std::function<void ()> onDone;
-    std::function<void ()> onError;
-};
-
-Q_DECLARE_METATYPE(Callback)
-static const int _i = qRegisterMetaType<Callback>();
-
 class Worker : public QObject
 {
     Q_OBJECT
