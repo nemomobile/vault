@@ -4,7 +4,7 @@
 #include "subprocess.hpp"
 #include "debug.hpp"
 #include "error.hpp"
-#include "vault.hpp"
+#include <vault/vault.hpp>
 
 #include "QString"
 #include "QVariant"

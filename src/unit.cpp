@@ -1,4 +1,8 @@
-#include "unit.hpp"
+#include <vault/unit.hpp>
+
+#include "util.hpp"
+#include "os.hpp"
+#include "json.hpp"
 #include "debug.hpp"
 
 #include <QString>

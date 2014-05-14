@@ -1,19 +1,19 @@
+#include <vault/vault.hpp>
+
+#include "os.hpp"
+#include "error.hpp"
+#include "debug.hpp"
+#include "subprocess.hpp"
+
+#include <libgit/commit.hpp>
+#include <libgit/branch.hpp>
+#include <libgit/repostatus.hpp>
 
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
 #include <QDateTime>
 #include <QDir>
-
-#include <libgit/commit.hpp>
-#include <libgit/branch.hpp>
-#include <libgit/repostatus.hpp>
-
-#include "vault.hpp"
-#include "os.hpp"
-#include "error.hpp"
-#include "debug.hpp"
-#include "subprocess.hpp"
 
 namespace vault {
 

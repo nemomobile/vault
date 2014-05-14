@@ -1,9 +1,8 @@
-
-#include "src/os.hpp"
-#include "src/debug.hpp"
-#include "src/vault.hpp"
-#include "src/vault_config.hpp"
-#include "transfer.hpp"
+#include <os.hpp>
+#include <debug.hpp>
+#include <vault/vault.hpp>
+#include <vault/config.hpp>
+#include <transfer.hpp>
 
 #include "vault.hpp"
 

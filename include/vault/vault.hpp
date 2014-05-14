@@ -1,6 +1,5 @@
-
-#ifndef VAULT_H
-#define VAULT_H
+#ifndef _VAULT_VAULT_HPP_
+#define _VAULT_VAULT_HPP_
 
 #include <functional>
 
@@ -8,7 +7,7 @@
 
 #include <libgit/repo.hpp>
 
-#include <vault_config.hpp>
+#include <vault/config.hpp>
 
 namespace vault {
 
@@ -85,4 +84,5 @@ private:
 
 }
 
-#endif
+#endif // _VAULT_VAULT_HPP_
+

@@ -1,13 +1,10 @@
 #ifndef _CUTES_UNIT_HPP_
 #define _CUTES_UNIT_HPP_
 
-#include "util.hpp"
-#include "os.hpp"
-#include "vault_config.hpp"
-#include "json.hpp"
-#include "sys.hpp"
+#include <vault/config.hpp>
+#include <memory>
 
-#include <cor/options.hpp>
+namespace sys { class GetOpt; }
 
 namespace vault { namespace unit {
 

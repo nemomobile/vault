@@ -5,7 +5,7 @@
 #include <libgit/repostatus.hpp>
 #include <libgit/commit.hpp>
 
-#include "vault_config.hpp"
+#include <vault/config.hpp>
 #include "error.hpp"
 #include "os.hpp"
 #include "debug.hpp"

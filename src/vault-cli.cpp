@@ -3,7 +3,7 @@
 #include <QCommandLineParser>
 #include <QDebug>
 
-#include "vault.hpp"
+#include <vault/vault.hpp>
 
 int main(int argc, char **argv)
 {
