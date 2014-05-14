@@ -10,6 +10,7 @@ void Process::start(QString const &cmd, QStringList const &args)
     if (isRunning_)
         error::raise({{"msg", "Can't start process, it is running"}
                 , {"cmd", cmd}, {"args", QVariant(args)}});
+    debug::info("Start", cmd, args);
     connect(ps.get(), static_cast<void (QProcess::*)(int, QProcess::ExitStatus)>
             (&QProcess::finished), this, &Process::onFinished);
     connect(ps.get(), static_cast<void (QProcess::*)(QProcess::ProcessError)>
@@ -42,14 +43,14 @@ QString Process::errorInfo() const
 
 void Process::onError(QProcess::ProcessError err)
 {
-    debug::debug("Process returned error", errorNames[err]);
+    debug::warning("Process returned error", errorNames[err]);
     isRunning_ = false;
     isError_ = true;
 }
 
 void Process::onFinished(int res, QProcess::ExitStatus status)
 {
-    debug::debug("Process is finished", res, status);
+    debug::info("Process is finished", res, status);
     isRunning_ = false;
     isError_ = false;
 }
@@ -109,6 +110,21 @@ int Process::check_call
     check_error(error_info);
     return rc();
 }
+
+QByteArray Process::stdout() const
+{
+    auto res = ps->readAllStandardOutput();
+    debug::debug("Stdout", res);
+    return res;
+}
+
+QByteArray Process::stderr() const
+{
+    auto res = ps->readAllStandardError();
+    debug::debug("Stderr", res);
+    return res;
+}
+
 
 QByteArray check_output(QString const &cmd, QStringList const &args
                         , QVariantMap const &error_info)

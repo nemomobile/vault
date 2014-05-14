@@ -51,15 +51,9 @@ public:
         return ps->write(data.toUtf8());
     }
 
-    QByteArray stdout() const
-    {
-        return ps->readAllStandardOutput();
-    }
+    QByteArray stdout() const;
 
-    QByteArray stderr() const
-    {
-        return ps->readAllStandardError();
-    }
+    QByteArray stderr() const;
 
     void stdinClose()
     {
