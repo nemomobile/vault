@@ -125,7 +125,7 @@ void object::test<tid_config_global>()
     QMap<QString, vault::config::Unit> units = vault::config::Config::global()->units();
     int mod_count = 0;
     ensure("Unit in config", units.contains("unit1"));
-    for (const auto &u: units) { ++mod_count; }
+    mod_count += units.size();
     ensure("One unit/member", mod_count == 1);
 
     register_unit("unit2", true);
@@ -133,7 +133,7 @@ void object::test<tid_config_global>()
     mod_count = 0;
     QString unit2_fname = os::path::join(global_mod_dir, "unit2.json");
     ensure("unit 2 global config", os::path::isFile(unit2_fname));
-    for (const auto &u: units) { ++mod_count; }
+    mod_count += units.size();
     ensure("Unit2 in config", units.contains("unit2"));
     ensure("One unit/member", mod_count == 2);
     ensure("unit 1 global config", os::path::isFile(unit1_fname));
