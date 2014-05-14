@@ -1,3 +1,5 @@
+#include "transfer.hpp"
+
 #include "os.hpp"
 #include "subprocess.hpp"
 #include "debug.hpp"
@@ -34,49 +36,6 @@ void trace(Level l, Args &&...args)
 {
     debug::print_ge(l, "Vault.transfer:", std::forward<Args>(args)...);
 }
-
-enum class Io { Exec, Options, OnProgress, EstSize, Dst, EOE };
-template <> struct StructTraits<Io>
-{
-    typedef std::tuple<QString, QStringList
-                       , std::function<void(QVariantMap &&)>
-                       , long, QString> type;
-
-    STRUCT_NAMES(Io, "Exec", "Options", "OnProgress", "EstSize", "Dst");
-};
-
-typedef Struct<Io> IoCmd;
-
-class CardTransfer : public QObject
-{
-    Q_OBJECT
-    Q_ENUMS(Actions)
-public:
-    enum Action { Export, Import, ActionsEnd };
-
-    CardTransfer()
-        : action_(ActionsEnd)
-        , space_free_(0)
-        , space_required_(0)
-    {}
-
-    typedef std::function<void(QVariantMap&&)> progressCallback;
-    void init(Action, QString const &);
-    void execute(progressCallback);
-
-private:
-    static Process doIO(IoCmd const &info);
-    static void validateDump(QString const &archive, QVariantMap const &err);
-    void estimateSpace();
-    void exportStorage(progressCallback);
-    void importStorage(progressCallback);
-
-    Action action_;
-    QString src_;
-    QString dst_;
-    double space_free_;
-    double space_required_;
-};
 
 static inline QString str(CardTransfer::Action a)
 {
@@ -314,5 +273,3 @@ void CardTransfer::execute(CardTransfer::progressCallback onProgress)
         break;
     }
 }
-
-#include "transfer.moc"

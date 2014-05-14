@@ -2,7 +2,7 @@ pkg_check_modules(COR cor REQUIRED)
 pkg_check_modules(libgit libgit REQUIRED)
 
 include_directories(
-  ${CMAKE_CURRENT_BINARY_DIR} ${COR_INCLUDE_DIRS} ${libgit_INCLUDE_DIRS}
+  ${COR_INCLUDE_DIRS} ${libgit_INCLUDE_DIRS}
 )
 link_directories(
   ${COR_LIBRARY_DIRS} ${libgit_LIBRARY_DIRS}
