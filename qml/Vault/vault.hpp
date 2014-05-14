@@ -39,7 +39,7 @@ signals:
     void backupDone();
     void restoreDone();
     void progress(const QString &unit, const QString &status);
-    void error();
+    void error(const QString &error);
 
 private:
     void initWorker(bool reload);

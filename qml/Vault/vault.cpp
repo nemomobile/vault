@@ -152,7 +152,7 @@ void Vault::initWorker(bool reload)
         m_worker->init(m_root);
         emit connectDone();
     } catch (error::Error e) {
-        emit error();
+        emit error(e.what());
     }
 }
 
@@ -226,7 +226,7 @@ void Vault::removeSnapshot(const QString &name)
             initWorker(true);
         } catch (error::Error e) {
             debug::error("Error reconnecting", e.what());
-            emit error();
+            emit error(e.what());
         }
     } else {
         debug::debug("There are some snapshots, continue");
