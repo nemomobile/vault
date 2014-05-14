@@ -98,6 +98,13 @@ Vault::Vault(QObject *p)
 {
 }
 
+Vault::~Vault()
+{
+    m_workerThread.quit();
+    m_workerThread.wait();
+    delete m_worker;
+}
+
 QString Vault::root() const
 {
     return m_root;

@@ -15,6 +15,7 @@ class Vault : public QObject
     Q_PROPERTY(QString backupHome READ backupHome WRITE setBackupHome NOTIFY backupHomeChanged)
 public:
     explicit Vault(QObject *parent = nullptr);
+    ~Vault();
 
     QString root() const;
     QString backupHome() const;
