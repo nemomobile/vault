@@ -28,7 +28,9 @@ public:
         m_vault = new vault::Vault(root);
         QVariantMap options = {{ "user.name", "Some Sailor"}, {"user.email", "sailor@jolla.com"}};
         if (!m_vault->exists()) {
-            m_vault->init(options);
+            if (!m_vault->init(options)) {
+                error::raise({{"msg", "vault is invalid"}});
+            }
         } else {
             if (m_vault->isInvalid()) {
                 error::raise({{"msg", "vault is invalid"}});

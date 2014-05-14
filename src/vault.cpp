@@ -172,7 +172,9 @@ void Vault::unregisterUnit(const QString &unit)
 bool Vault::init(const QVariantMap &config)
 {
     if (!os::path::exists(m_path)) {
-        os::mkdir(m_path);
+        if (!os::mkdir(m_path)) {
+            return false;
+        }
     }
 
     if (!m_vcs.init()) {
