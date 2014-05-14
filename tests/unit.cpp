@@ -29,7 +29,8 @@ tf vault_unit_test("unit");
 
 enum test_ids {
     tid_export =  1,
-    tid_import
+    tid_import,
+    tid_suite_teardown
 };
 
 namespace {
@@ -51,9 +52,9 @@ const QString home = os::path::join(root, "home");
 const QString vault = os::path::join(root, "vault");
 const QString home_out = os::path::join(root, "home_out");
 
-typedef cor::ScopeExit<std::function<void ()> > teardown_type;
-
-teardown_type setup()
+typedef std::function<void ()> teardown_type;
+std::list<teardown_type> suite_teardowns_;
+void setup()
 {
     auto mkdir = [](QString const &p) {
         ensure(std::string("Dir should not exist:") + p.toStdString()
@@ -64,9 +65,10 @@ teardown_type setup()
     mkdir(home);
     mkdir(home_out);
     mkdir(vault);
-    teardown_type on_exit([]() {
+    suite_teardowns_.push_back([]() {
             os::rmtree(root);
         });
+
 
     QMap<QString, QString> home_dirs = {{ "data", os::path::join(home, "data")}
                                         , {"bin", os::path::join(home, "bin")}};
@@ -102,8 +104,6 @@ teardown_type setup()
         os::symlink("./linked_dir", path::join(root_path, "symlink_to_dir"));
 
     }
-
-    return std::move(on_exit);
 }
 
 } // namespace
@@ -120,10 +120,7 @@ std::basic_ostream<CharT>& operator <<
 template<> template<>
 void object::test<tid_export>()
 {
-    auto on_exit = setup();
-    auto check_clean = cor::on_scope_exit([]() {
-            ensure("Root is cleaned", !os::path::exists(root));
-        });
+    setup();
     QVariantMap options = {{"dir", vault}, {"bin-dir", vault}
                            , {"home-dir", home}, {"action", "export"}};
     auto args = sys::command_line_options
@@ -142,7 +139,6 @@ void object::test<tid_export>()
 template<> template<>
 void object::test<tid_import>()
 {
-    auto on_exit = setup();
     QVariantMap options = {
         {"dir", vault}, {"bin-dir", vault}
         , {"home-dir", home_out}, {"action", "import"}};
@@ -153,12 +149,17 @@ void object::test<tid_import>()
     auto out = str(subprocess::check_output
                    ("./check_dirs_similar.sh", QStringList({home, home_out})));
     auto lines = out.split("\n").filter(QRegExp("^[<>]"));
-    QStringList expected = {"< ./bin/symlink_to_dir", "< ./data/symlink_to_dir"
-                            , "> ./" + vault::config::prefix + ".links"
-                            , "> ./" + vault::config::prefix + ".unit.version"};
+    QStringList expected; // no difference
     lines.sort();
     expected.sort();
     ensure_eq("Unexpected structure difference", lines, expected);
+}
+
+template<> template<>
+void object::test<tid_suite_teardown>()
+{
+    for (auto const &fn : suite_teardowns_)
+        fn();
 }
 
 }

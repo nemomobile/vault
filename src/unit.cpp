@@ -108,7 +108,7 @@ private:
     static map_type read_links(QString const &root_dir) {
         return json::read(get_link_info_fname(root_dir)).toVariantMap();
     }
-    
+
     static size_t write_links(map_type const &links, QString const &root_dir)
     {
         return json::write(links, get_link_info_fname(root_dir));
@@ -173,48 +173,50 @@ void Operation::to_vault(QString const &data_type
         auto src = str(info["full_path"]);
         map_type options = {{"preserve", default_preserve}};
         int (*fn)(QString const&, QString const&, map_type &&);
-        
+
         if (!(os::path::isDir(dst) || os::mkdir(dst, {{ "parent", true }}))) {
             error::raise({{"msg", "Can't create destination in vault"}
                     , {"path", dst}});
         }
-        
+
         if (os::path::isDir(src)) {
             fn = &os::update_tree;
         } else if (os::path::isFile(src)) {
             fn = &os::cp;
         } else {
-            error::raise({{"msg", "No handler for this entry type"}
-                    , {"path", src}});
+            error::raise({{"msg", "No handler for this entry type"}, {"path", src}});
         }
         fn(src, dst, std::move(options));
     };
 
     auto process_symlink = [this, &links](map_type &v) {
-        if (!os::path::isSymLink(str(get(v, "full_path"))))
+        auto full_path = str(get(v, "full_path"));
+
+        if (!os::path::isSymLink(full_path))
             return;
 
         debug::debug("Process symlink", v);
-        if (!os::path::isDescendent(str(get(v, "full_path"))
-                                    , str(get(v, "root_path")))) {
+        if (!os::path::isDescendent(full_path, str(get(v, "root_path")))) {
             if (is(get(v, "required")))
                 error::raise({{"msg", "Required path does not belong to its root dir"}
-                        , {"path", get(v, "full_path")}});
+                        , {"path", full_path}});
             v["skip"] = true;
             return;
         }
 
         // separate link and deref destination
-        auto tgt = os::path::deref(str(get(v, "full_path")));
-        auto tgt_path = os::path::relative(os::path::canonical(tgt), home);
+        auto tgt = os::path::target(full_path);
+        full_path = os::path::canonical(os::path::deref(full_path));
+        auto tgt_path = os::path::relative(full_path, home);
 
-        map_type link_info;
+        map_type link_info(v);
         link_info.unite(v);
         link_info["target"] = tgt;
         link_info["target_path"] = tgt_path;
+        debug::debug("Symlink info", link_info);
         links.add(link_info);
 
-        v["full_path"] = tgt;
+        v["full_path"] = full_path;
         v["path"] = tgt_path;
     };
 
@@ -234,7 +236,7 @@ void Operation::to_vault(QString const &data_type
 
         return res;
     };
-        
+
     std::for_each(paths.begin(), paths.end(), process_symlink);
     list_type existing_paths;
     for (auto it = paths.begin(); it != paths.end(); ++it) {
@@ -254,8 +256,6 @@ void Operation::from_vault(QString const &data_type
     debug::debug("From vault", data_type, "Paths", items, "Location", location);
     QString src_root(get_root_vault_dir(data_type));
 
-    list_type linked_items;
-    
     bool overwrite_default;
     {
         auto v = get(location, "options", "overwrite");
@@ -282,7 +282,8 @@ void Operation::from_vault(QString const &data_type
     };
 
     auto process_absent_and_links = [src_root, &links](map_type &item) {
-        auto src = os::path::join(src_root, str(item["path"]));
+        auto item_path = str(item["path"]);
+        auto src = os::path::join(src_root, item_path);
         if (os::path::exists(src)) {
             item["src"] = src;
             return map_type();
@@ -292,25 +293,28 @@ void Operation::from_vault(QString const &data_type
 
         auto create_link = [](map_type const &link, map_type const &item) {
             create_dst_dirs(item);
-            os::symlink(str(link["target_path"]), str(item["full_path"]));
+            os::symlink(str(link["target"]), str(item["full_path"]));
         };
- 
+
         if (link.empty()) {
+            debug::debug("No symlink for", item_path);
             if (is(item["required"]))
                 error::raise({{"msg", "No required source item"},
                             {"path", src}, {"path", link["path"]}});
             return map_type();
         }
 
+        debug::debug("There is a symlink for", item_path);
         QVariantMap linked(item);
-        linked["path"] = link["target_path"];
-        linked["full_path"] = os::path::join(str(item["root_path"])
-                                       , str(link["target_path"]));
-        src = os::path::join(src_root, str(linked["path"]));
+        auto target_path = str(link["target_path"]);
+        linked["path"] = target_path;
+        linked["full_path"] = os::path::join(str(item["root_path"]), target_path);
+        src = os::path::join(src_root, target_path);
         if (os::path::exists(src)) {
             linked["src"] = src;
             linked["skip"] = false;
             create_link(link, item);
+            debug::debug("Symlink target path is", linked);
             return linked;
         } else if (is(item["required"])) {
             error::raise({{"msg", "No linked source item"},
@@ -329,17 +333,22 @@ void Operation::from_vault(QString const &data_type
         return fallback_v0();
     }
 
+    list_type linked_items;
     for (auto it = items.begin(); it != items.end(); ++it) {
         auto linked = process_absent_and_links(*it);
         if (!linked.empty())
             linked_items.push_back(std::move(linked));
     }
     items.append(linked_items);
+    debug::debug("LINKED+", items);
 
     for (auto it = items.begin(); it != items.end(); ++it) {
         auto &item = *it;
         QString src, dst_dir, dst;
-        if (is(item["skip"])) return;
+        if (is(item["skip"])) {
+            debug::debug("Skipping", str(item["path"]));
+            continue;
+        }
         bool overwrite;
         std::function<void()> fn;
 
@@ -391,7 +400,7 @@ void Operation::execute()
 {
     QString vault_bin_dir = str(options->value("bin-dir")),
         vault_data_dir = str(options->value("dir"));
-        
+
     action_type action;
 
     if (!os::path::isDir(home))
@@ -453,7 +462,7 @@ void Operation::execute()
         }
     };
 
-}        
+}
 
 } // namespace
 
