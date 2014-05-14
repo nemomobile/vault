@@ -1,9 +1,9 @@
 
 #include <QDir>
 
-#include <libgit/repo.hpp>
-#include <libgit/repostatus.hpp>
-#include <libgit/commit.hpp>
+#include <gittin/repo.hpp>
+#include <gittin/repostatus.hpp>
+#include <gittin/commit.hpp>
 
 #include <vault/config.hpp>
 #include "error.hpp"
@@ -179,7 +179,7 @@ QString Config::root() const
 
 
 
-Vault::Vault(LibGit::Repo *vcs)
+Vault::Vault(Gittin::Repo *vcs)
      : m_config(QDir(vcs->path() + "/.modules").absolutePath())
      , m_vcs(vcs)
 {
@@ -196,8 +196,8 @@ bool Vault::set(const QVariantMap &data)
         return false;
     }
 
-    m_vcs->add(m_config.root(), LibGit::AddOptions::All);
-    LibGit::RepoStatus status = m_vcs->status(m_config.root());
+    m_vcs->add(m_config.root(), Gittin::AddOptions::All);
+    Gittin::RepoStatus status = m_vcs->status(m_config.root());
     if (!status.isClean()) {
         m_vcs->commit("+" + data.value("name").toString());
     }
@@ -212,8 +212,8 @@ bool Vault::rm(const QString &name)
     }
 
     fname = m_config.root() + "/" + fname;
-    m_vcs->add(fname, LibGit::AddOptions::Update);
-    LibGit::RepoStatus status = m_vcs->status(m_config.root());
+    m_vcs->add(fname, Gittin::AddOptions::Update);
+    Gittin::RepoStatus status = m_vcs->status(m_config.root());
     if (status.isClean()) {
         error::raise({{"msg", "Logic error, can't rm vcs path"}, {"path", fname}});
     }

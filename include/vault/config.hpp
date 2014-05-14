@@ -5,7 +5,7 @@
 #include <QMap>
 #include <QVariantMap>
 
-namespace LibGit {
+namespace Gittin {
 class Repo;
 }
 
@@ -61,7 +61,7 @@ private:
 class Vault
 {
 public:
-    explicit Vault(LibGit::Repo *vcs);
+    explicit Vault(Gittin::Repo *vcs);
     ~Vault();
 
     bool set(const QVariantMap &data);
@@ -73,7 +73,7 @@ public:
 
 private:
     Config m_config;
-    LibGit::Repo *m_vcs;
+    Gittin::Repo *m_vcs;
 };
 
 }}

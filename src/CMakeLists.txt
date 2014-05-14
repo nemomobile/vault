@@ -1,5 +1,5 @@
 pkg_check_modules(COR cor REQUIRED)
-pkg_check_modules(libgit libgit REQUIRED)
+pkg_check_modules(gittin gittin REQUIRED)
 
 include_directories(
   ${COR_INCLUDE_DIRS} ${libgit_INCLUDE_DIRS}
@@ -21,7 +21,7 @@ install(TARGETS cutespp DESTINATION ${DST_LIB})
 
 add_library(vault-core SHARED vault.cpp vault_config.cpp)
 qt5_use_modules(vault-core Core)
-target_link_libraries(vault-core cutespp ${libgit_LIBRARIES})
+target_link_libraries(vault-core cutespp ${gittin_LIBRARIES})
 set_target_properties(vault-core PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}

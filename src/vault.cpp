@@ -5,9 +5,9 @@
 #include "debug.hpp"
 #include "subprocess.hpp"
 
-#include <libgit/commit.hpp>
-#include <libgit/branch.hpp>
-#include <libgit/repostatus.hpp>
+#include <gittin/commit.hpp>
+#include <gittin/branch.hpp>
+#include <gittin/repostatus.hpp>
 
 #include <QFile>
 #include <QTextStream>
@@ -29,16 +29,16 @@ QString fileName(File id)
     return fileNames[id];
 };
 
-using LibGit::CleanOptions;
-using LibGit::ResetOptions;
-using LibGit::CheckoutOptions;
+using Gittin::CleanOptions;
+using Gittin::ResetOptions;
+using Gittin::CheckoutOptions;
 
 namespace version {
     static const int tree = 2;
     static const int repository = 2;
 }
 
-Snapshot::Snapshot(const LibGit::Tag &tag)
+Snapshot::Snapshot(const Gittin::Tag &tag)
         : m_tag(tag)
 {
 }
@@ -157,14 +157,14 @@ void Vault::execute(const QVariantMap &options)
 
 void Vault::registerConfig(const QVariantMap &config)
 {
-    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    m_vcs.checkout("master", Gittin::CheckoutOptions::Force);
     reset("master");
     m_config.set(config);
 }
 
 void Vault::unregisterUnit(const QString &unit)
 {
-    m_vcs.checkout("master", LibGit::CheckoutOptions::Force);
+    m_vcs.checkout("master", Gittin::CheckoutOptions::Force);
     reset("master");
     m_config.rm(unit);
 }
@@ -261,7 +261,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
     writeFile(fileName(File::Message), msg);
     m_vcs.add(fileName(File::Message));
-    LibGit::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
+    Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
     commit.addNote(message);
     tagSnapshot(timeTag);
 
@@ -318,7 +318,7 @@ void Vault::resetMaster()
 
 Vault::Result Vault::restore(const QString &tag, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
-    Snapshot ss(LibGit::Tag(&m_vcs, tag));
+    Snapshot ss(Gittin::Tag(&m_vcs, tag));
     return restore(ss, home, units, callback);
 }
 
@@ -358,7 +358,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
 QList<Snapshot> Vault::snapshots() const
 {
     QList<Snapshot> list;
-    for (const LibGit::Tag &tag: m_vcs.tags()) {
+    for (const Gittin::Tag &tag: m_vcs.tags()) {
         if (!tag.name().isEmpty() && tag.name().startsWith('>')) {
             list << Snapshot(tag);
         }
@@ -368,7 +368,7 @@ QList<Snapshot> Vault::snapshots() const
 
 Snapshot Vault::snapshot(const QByteArray &tagName) const
 {
-    for (const LibGit::Tag &tag: m_vcs.tags()) {
+    for (const Gittin::Tag &tag: m_vcs.tags()) {
         if (tag.name() == tagName) {
             return Snapshot(tag);
         }
@@ -415,7 +415,7 @@ bool Vault::setState(const QString &state)
 
 struct Unit
 {
-    Unit(const QString &unit, const QString &home, LibGit::Repo *vcs, const config::Unit &config)
+    Unit(const QString &unit, const QString &home, Gittin::Repo *vcs, const config::Unit &config)
         : m_home(home)
         , m_unit(unit)
         , m_root(QDir(os::path::join(vcs->path(), unit)))
@@ -498,8 +498,8 @@ struct Unit
 
         execScript("export");
 
-        LibGit::RepoStatus status = m_vcs->status(os::path::join(m_root.path(), "blobs"));
-        for (const LibGit::RepoStatus::File &file: status.files()) {
+        Gittin::RepoStatus status = m_vcs->status(os::path::join(m_root.path(), "blobs"));
+        for (const Gittin::RepoStatus::File &file: status.files()) {
             if (file.index == ' ' && file.workTree == 'D') {
                 m_vcs->rm(file.file);
                 continue;
@@ -522,7 +522,7 @@ struct Unit
 
         // add all only in data dir to avoid blobs to get into git
         // objects storage
-        m_vcs->add(os::path::join(m_root.path(), "data"), LibGit::AddOptions::All);
+        m_vcs->add(os::path::join(m_root.path(), "data"), Gittin::AddOptions::All);
         status = m_vcs->status(m_root.path());
         if (status.hasDirtyFiles()) {
             error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
@@ -546,7 +546,7 @@ struct Unit
     QString m_home;
     QString m_unit;
     QDir m_root;
-    LibGit::Repo *m_vcs;
+    Gittin::Repo *m_vcs;
     QString m_blobs;
     QString m_data;
     config::Unit m_config;
@@ -554,7 +554,7 @@ struct Unit
 
 bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
 {
-    LibGit::Commit head = LibGit::Branch(&m_vcs, "master").head();
+    Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();
     QString name = unit;
 
     try {

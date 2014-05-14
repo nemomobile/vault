@@ -5,7 +5,7 @@
 
 #include <QString>
 
-#include <libgit/repo.hpp>
+#include <gittin/repo.hpp>
 
 #include <vault/config.hpp>
 
@@ -18,14 +18,14 @@ QString fileName(File);
 class Snapshot
 {
 public:
-    explicit Snapshot(const LibGit::Tag &commit);
+    explicit Snapshot(const Gittin::Tag &commit);
 
-    inline LibGit::Tag tag() const { return m_tag; }
+    inline Gittin::Tag tag() const { return m_tag; }
 
     void remove();
 
 private:
-    LibGit::Tag m_tag;
+    Gittin::Tag m_tag;
 };
 
 class Vault
@@ -78,7 +78,7 @@ private:
 
     const QString m_path;
     const QString m_blobStorage;
-    LibGit::Repo m_vcs;
+    Gittin::Repo m_vcs;
     config::Vault m_config;
 };
 
