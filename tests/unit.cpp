@@ -1,7 +1,7 @@
 #include "sys.hpp"
 #include "os.hpp"
 #include "subprocess.hpp"
-#include "vault_config.hpp"
+#include <vault/config.hpp>
 
 #include <tut/tut.hpp>
 
