@@ -20,6 +20,8 @@ template <> struct StructTraits<Io>
 
 typedef Struct<Io> IoCmd;
 
+namespace vault { class Vault; }
+
 class CardTransfer : public QObject
 {
     Q_OBJECT
@@ -34,15 +36,18 @@ public:
     enum Action { Export, Import, ActionsEnd };
 
     CardTransfer()
-        : action_(ActionsEnd)
+        : vault_(nullptr)
+        , action_(ActionsEnd)
         , space_free_(0)
         , space_required_(0)
     {}
 
     typedef std::function<void(QVariantMap&&)> progressCallback;
-    void init(Action, QString const &);
+    void init(vault::Vault *, Action, QString const &);
     void execute(progressCallback);
 
+signals:
+    void vaultChanged();
 private:
     static subprocess::Process doIO(IoCmd const &info);
     static void validateDump(QString const &archive, QVariantMap const &err);
@@ -55,7 +60,10 @@ private:
     inline Action getAction() const { return action_; }
     inline double getSpace() const { return space_free_; }
     inline double getRequired() const { return space_required_; }
+    vault::Vault *getVault();
+    void invalidateVault();
 
+    vault::Vault *vault_;
     Action action_;
     QString src_;
     QString dst_;

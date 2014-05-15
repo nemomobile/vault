@@ -91,7 +91,7 @@ public:
         }
         try {
             CardTransfer::Action ac = action == Vault::Import ? CardTransfer::Import : CardTransfer::Export;
-            m_transfer->init(ac, path);
+            m_transfer->init(m_vault, ac, path);
             emit done(Vault::ExportImportPrepare);
         } catch (error::Error e) {
             emit error(Vault::ExportImportPrepare, e.what());

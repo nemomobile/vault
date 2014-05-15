@@ -12,20 +12,8 @@
 
 namespace {
 
-std::shared_ptr<vault::Vault> vault_;
 using vault::File;
 
-std::shared_ptr<vault::Vault> getVault()
-{
-    if (!vault_)
-        error::raise({{"msg", "Vault should be initialized first"}});
-    return vault_;
-}
-
-void invalidateVault()
-{
-    vault_ = nullptr;
-}
 
 }
 
@@ -50,9 +38,23 @@ static QDebug & operator <<(QDebug &d, CardTransfer::Action a)
     return d;
 }
 
-void CardTransfer::init(Action action, QString const &dump_path)
+vault::Vault *CardTransfer::getVault()
+{
+    if (!vault_)
+        error::raise({{"msg", "Vault should be initialized first"}});
+    return vault_;
+}
+
+void CardTransfer::invalidateVault()
+{
+    vault_ = nullptr;
+    emit vaultChanged();
+}
+
+void CardTransfer::init(vault::Vault *v, Action action, QString const &dump_path)
 {
     trace(Level::Debug, "Prepare", action);
+    vault_ = v;
 
     if (!hasType(dump_path, QMetaType::QString))
         error::raise({{"reason", "Logic"}
