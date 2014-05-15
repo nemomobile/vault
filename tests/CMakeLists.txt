@@ -7,7 +7,7 @@ enable_testing()
 find_package(Qt5Core REQUIRED)
 set(CMAKE_AUTOMOC TRUE)
 
-set(UNIT_TESTS unit vault)
+set(UNIT_TESTS unit vault cutes)
 
 add_executable(unit_all unit_all.cpp)
 target_link_libraries(unit_all vault-unit)

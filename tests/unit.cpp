@@ -3,6 +3,7 @@
 #include "subprocess.hpp"
 #include <vault/config.hpp>
 
+#include "tests_common.hpp"
 #include <tut/tut.hpp>
 
 //#include "tests_common.hpp"
@@ -107,15 +108,6 @@ void setup()
 }
 
 } // namespace
-
-template <class CharT>
-std::basic_ostream<CharT>& operator <<
-(std::basic_ostream<CharT> &dst, QStringList const &src)
-{
-    for (auto v : src)
-        dst  << v.toStdString() << ",";
-    return dst;
-}
 
 template<> template<>
 void object::test<tid_export>()

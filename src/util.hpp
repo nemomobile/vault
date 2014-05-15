@@ -292,6 +292,11 @@ QMap<ResKeyT, T> mapByField(QList<T> const &src, K const &key)
 double parseBytes(QString const &s, QString const &unit = "b"
                   , long multiplier = 1024);
 
+typedef std::function<QVariant (QVariant const &
+                                , QVariant const &
+                                , QVariant const &)> visitor_type;
+QVariant visit(visitor_type visitor, QVariant const &src, QVariant const &ctx);
+
 }
 
 #endif // _CUTES_UTIL_HPP_

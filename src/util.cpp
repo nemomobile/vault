@@ -53,5 +53,30 @@ double parseBytes(QString const &s, QString const &unit, long multiplier)
     return res;
 }
 
+QVariant visit(visitor_type visitor, QVariant const &src, QVariant const &ctx)
+{
+    visitor_type visit_obj;
+    visit_obj = [&visitor, &visit_obj](QVariant const &ctx
+                                       , QVariant const &key
+                                       , QVariant const &src) {
+        auto process_obj = [visit_obj]
+        (QVariant const &ctx, QVariant const &src) {
+            if (hasType(src, QMetaType::QVariantMap)) {
+                auto m = src.toMap();
+                for (auto it = m.begin(); it != m.end(); ++it)
+                    visit_obj(ctx, it.key(), it.value());
+            } else if (hasType(src, QMetaType::QVariantList)) {
+                auto l = src.toList();
+                int i = 0;
+                for (auto it = l.begin(); it != l.end(); ++it, ++i)
+                    visit_obj(ctx, i, *it);
+            }
+            return ctx;
+        };
+        return process_obj(visitor(ctx, key, src), src);
+    };
+    return visit_obj(ctx, QVariant(), src);
+}
+
 
 }
