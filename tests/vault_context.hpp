@@ -27,10 +27,8 @@ void setup_context()
     if (home.isEmpty())
         error::raise({{"msg", "Empty home path"}});
 
-    if (!os::path::isDir(home)) {
-        if (!os::mkdir(home, {{"parent", true}}))
+    if (!(os::path::isDir(home) || os::mkdir(home, {{"parent", true}})))
             error::raise({{"msg", "Can't create tmp dir"}, {"dir", home}});
-    }
 
     auto config_dir = os::environ("VAULT_GLOBAL_CONFIG_DIR");
     if (config_dir.isEmpty())
