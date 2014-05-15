@@ -75,6 +75,11 @@ void setup_context()
     };
 }
 
+const QVariantMap unit1_tree = {
+    {"data", map({{"f1", "data1"}})},
+    {"binaries", map({{}})}
+};
+
 }
 
 #endif // _VAULT_TESTS_VAULT_CONTEXT_HPP_

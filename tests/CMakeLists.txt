@@ -7,7 +7,7 @@ enable_testing()
 find_package(Qt5Core REQUIRED)
 set(CMAKE_AUTOMOC TRUE)
 
-set(UNIT_TESTS unit vault cutes)
+set(UNIT_TESTS unit vault transfer cutes)
 
 add_executable(unit_all unit_all.cpp)
 target_link_libraries(unit_all vault-unit)
@@ -30,5 +30,11 @@ add_executable(unit1_vault_test unit1_vault_test.cpp)
 target_link_libraries(unit1_vault_test vault-unit)
 qt5_use_modules(unit1_vault_test Core)
 add_dependencies(check unit1_vault_test)
+
+target_link_libraries(test_transfer vault-transfer)
+
+add_executable(unit1 unit1.cpp)
+target_link_libraries(unit1 vault-unit)
+qt5_use_modules(unit1 Core)
 
 add_subdirectory(qml)
