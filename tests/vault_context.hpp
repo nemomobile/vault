@@ -4,8 +4,9 @@
 #include <subprocess.hpp>
 #include <os.hpp>
 
-namespace {
+#include <tut/tut.hpp>
 
+namespace {
 
 QStringList get_ftree(QString const &root)
 {
@@ -14,6 +15,31 @@ QStringList get_ftree(QString const &root)
     auto ftree = filterEmpty(str(ps.check_output("find", {"."})).split("\n"));
     ftree.sort();
     return ftree;
+}
+
+QVariant mktree(QVariantMap const &tree, QString const &root)
+{
+    using tut::ensure;
+    auto fn = [](QVariant const &path_v, QVariant const &key, QVariant const &data) {
+        auto path = str(path_v);
+        if (!key.isValid()) {
+            if (!os::path::isDir(path))
+                os::mkdir(path);
+            return path;
+        }
+        auto name = str(key);
+
+        auto cur_path = os::path::join(path, name);
+        if (hasType(data, QMetaType::QVariantMap)) {
+            os::mkdir(cur_path);
+            ensure("Dir doesn't exists", os::path::isDir(cur_path));
+        } else if (hasType(data, QMetaType::QString)) {
+            os::write_file(cur_path, str(data));
+            ensure("File is written", os::path::isFile(cur_path));
+        }
+        return cur_path;
+    };
+    return util::visit(fn, tree, root);
 }
 
 QVariantMap context;
@@ -38,6 +64,8 @@ void setup_context()
         {"home", home}
         , {"config_dir", config_dir}
         , {"vault_dir", os::path::join(home, ".vault")}
+        , {"unit1_dir", os::path::join(home, "unit1")}
+        , {"unit2_dir", os::path::join(home, "unit2")}
         , {"unit1"
            , map({{"home", map({{"bin", os::path::join("unit1", "binaries")},
                                    {"data", os::path::join("unit1", "data")}})}})}
