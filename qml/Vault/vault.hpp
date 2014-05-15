@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QThread>
 #include <QStringList>
+#include <QVariantMap>
 
 class QJSValue;
 class Worker;
@@ -43,7 +44,7 @@ public:
     Q_INVOKABLE void startBackup(const QString &message, const QStringList &units);
     Q_INVOKABLE void startRestore(const QString &tag, const QStringList &units);
     Q_INVOKABLE QStringList snapshots() const;
-    Q_INVOKABLE QStringList units() const;
+    Q_INVOKABLE QVariantMap units() const;
     Q_INVOKABLE void resetHead();
     Q_INVOKABLE void removeSnapshot(const QString &name);
     Q_INVOKABLE void exportImportPrepare(ImportExportAction action, const QString &path);

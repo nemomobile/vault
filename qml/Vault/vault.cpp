@@ -225,11 +225,11 @@ QStringList Vault::snapshots() const
     return m_worker->snapshots();
 }
 
-QStringList Vault::units() const
+QVariantMap Vault::units() const
 {
-    QStringList units;
+    QVariantMap units;
     for (auto &u: m_worker->m_vault->config().units()) {
-        units << u.name();
+        units.insert(u.name(), u.data());
     }
     return units;
 }
