@@ -3,7 +3,7 @@
 #include "subprocess.hpp"
 #include <vault/config.hpp>
 #include <vault/vault.hpp>
-
+#include "tests_common.hpp"
 #include <tut/tut.hpp>
 
 //#include "tests_common.hpp"
@@ -73,15 +73,6 @@ std::function<void ()> setup()
 }
 
 } // namespace
-
-template <class CharT>
-std::basic_ostream<CharT>& operator <<
-(std::basic_ostream<CharT> &dst, QStringList const &src)
-{
-    for (auto v : src)
-        dst  << v.toStdString() << ",";
-    return dst;
-}
 
 void vault_init()
 {
