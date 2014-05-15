@@ -269,13 +269,13 @@ QList<std::tuple<X, Y> > zip(QList<X> const &x, QList<Y> const &y)
     QList<std::tuple<X, Y> > res;
     auto yit = y.begin();
     auto xit = x.begin();
-    while(xit != x.end()) {
+    for(;xit != x.end(); ++xit, ++yit) {
         if (yit != y.end())
             res.push_back(std::make_tuple(*xit, *yit));
         else
             break;
     }
-    while(xit != x.end())
+    for(;xit != x.end(); ++xit)
         res.push_back(std::make_tuple(*xit, Y()));
 
     return res;

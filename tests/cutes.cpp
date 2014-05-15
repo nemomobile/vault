@@ -20,7 +20,8 @@ typedef tf::object object;
 tf vault_cutes_test("cutes");
 
 enum test_ids {
-    tid_visit =  1,
+    tid_visit =  1
+    , tid_zip
 };
 
 template<> template<>
@@ -49,14 +50,32 @@ void object::test<tid_visit>()
               || hasType(data, QMetaType::QVariantList)))
             v << data.typeName() << str(data);
         dst << v.join("/");
-        qDebug() << "VISIT" << ctx << key << data;
         return k;
     };
     util::visit(fn, src, QVariant());
     dst.sort();
     expected.sort();
-    qDebug() << dst;
     ensure_eq("Visited items", dst, expected);
+}
+
+template<> template<>
+void object::test<tid_zip>()
+{
+    QStringList l1, l2;
+    l1 << "A";
+    l2 << "a";
+    auto res = util::zip(l1, l2);
+    ensure_eq("Single item", res.size(), 1);
+    l1 << "B";
+    res = util::zip(l1, l2);
+    ensure_eq("2 items, 2nd empty", res.size(), 2);
+    l2 << "b";
+    res = util::zip(l1, l2);
+    ensure_eq("2 items", res.size(), 2);
+    l2 << "c";
+    res = util::zip(l1, l2);
+    ensure_eq("2 items, w/o 3rd", res.size(), 2);
+
 }
 
 }
