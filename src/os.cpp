@@ -331,5 +331,15 @@ QVariant du(QString const &path, QVariantMap &&options)
     return map(pairs);
 }
 
+QString mkTemp(QVariantMap &&options)
+{
+    if (options.empty())
+        options["dir"] = false;
+
+    string_map_type short_options = {{"dir", "d"}};
+    auto args = sys::command_line_options(options, short_options);
+    auto res = str(subprocess::check_output("mktemp", args));
+    return res.trimmed();
+}
 
 } // os

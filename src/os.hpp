@@ -175,7 +175,7 @@ string_map_type stat(QString const &path, QVariantMap &&options = QVariantMap())
 QVariant du(QString const &path, QVariantMap &&options = map({{"summarize", true}
             , {"one_filesystem", true}, {"block_size", "K"}}));
 double diskFree(QString const &path);
-
+QString mkTemp(QVariantMap &&options = QVariantMap());
 
 }
 
