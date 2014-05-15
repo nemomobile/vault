@@ -49,6 +49,7 @@ public:
     Q_INVOKABLE void removeSnapshot(const QString &name);
     Q_INVOKABLE void exportImportPrepare(ImportExportAction action, const QString &path);
     Q_INVOKABLE void exportImportExecute();
+    Q_INVOKABLE QString notes(const QString &snapshot) const;
 
     Q_INVOKABLE void registerUnit(const QJSValue &unit, bool global);
 

@@ -275,6 +275,16 @@ void Vault::exportImportExecute()
     QMetaObject::invokeMethod(m_worker, "eiExecute");
 }
 
+QString Vault::notes(const QString &snapshot) const
+{
+    for (const vault::Snapshot &ss: m_worker->m_vault->snapshots()) {
+        if (ss.tag().name() == snapshot) {
+            return ss.tag().notes();
+        }
+    }
+    return QString();
+}
+
 void Vault::registerUnit(const QJSValue &unit, bool global)
 {
     QVariantMap map = unit.toVariant().toMap();
