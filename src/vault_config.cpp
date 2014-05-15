@@ -77,7 +77,7 @@ static Config mkGlobal()
 }
 
 static const char *moduleExt = ".json";
-Config Config::s_global = mkGlobal();
+static Config s_global = mkGlobal();
 
 Config::Config(const QString &unitsDir)
       : m_unitsDir(unitsDir)
@@ -93,7 +93,7 @@ Config::~Config()
 {
 }
 
-Config *Config::global()
+Config *global()
 {
     return &s_global;
 }

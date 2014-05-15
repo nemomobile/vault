@@ -50,13 +50,12 @@ public:
     QString path(const QString &fname) const;
     QString root() const;
 
-    static Config *global();
-
 private:
     QString m_unitsDir;
     QMap<QString, Unit> m_units;
-    static Config s_global;
 };
+
+Config *global();
 
 class Vault
 {

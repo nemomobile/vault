@@ -65,7 +65,7 @@ std::function<void ()> setup()
     }
     os::mkdir(home);
 
-    vault::config::Config::global()->setUnitsDir(global_mod_dir);
+    vault::config::global()->setUnitsDir(global_mod_dir);
     os::rmtree(global_mod_dir);
     os::mkdir(global_mod_dir);
 
@@ -122,14 +122,14 @@ void object::test<tid_config_global>()
     QString unit1_fname = os::path::join(global_mod_dir, "unit1.json");
     ensure("unit 1 global config", os::path::isFile(unit1_fname));
 
-    QMap<QString, vault::config::Unit> units = vault::config::Config::global()->units();
+    QMap<QString, vault::config::Unit> units = vault::config::global()->units();
     int mod_count = 0;
     ensure("Unit in config", units.contains("unit1"));
     mod_count += units.size();
     ensure("One unit/member", mod_count == 1);
 
     register_unit("unit2", true);
-    units = vault::config::Config::global()->units();
+    units = vault::config::global()->units();
     mod_count = 0;
     QString unit2_fname = os::path::join(global_mod_dir, "unit2.json");
     ensure("unit 2 global config", os::path::isFile(unit2_fname));
@@ -140,7 +140,7 @@ void object::test<tid_config_global>()
 
     vault::Vault::execute({{"action", "unregister"},  {"global", true}, {"unit", "unit1"}});
     vault::Vault::execute({{"action", "unregister"},  {"global", true}, {"unit", "unit2"}});
-    units = vault::config::Config::global()->units();
+    units = vault::config::global()->units();
     ensure("global config is removed", !os::path::exists(unit1_fname));
     ensure("no unit1 in global config", !units.contains("unit1"));
     ensure("no unit2 in global config", !units.contains("unit2"));
@@ -173,14 +173,14 @@ void object::test<tid_config_update>()
     os::mkdir(home);
     vault_init();
     register_unit("unit1", true);
-    QMap<QString, vault::config::Unit> units = vault::config::Config::global()->units();
+    QMap<QString, vault::config::Unit> units = vault::config::global()->units();
     ensure("no unit1 in global config", units.contains("unit1"));
 
     register_unit("unit2", false);
     vault::config::Vault config = vlt.config();
     units = config.units();
     ensure("no unit2 in vault config", units.contains("unit2"));
-    config.update(vault::config::Config::global()->units());
+    config.update(vault::config::global()->units());
 
     units = vlt.config().units();
     ensure("no unit1 in vault config", units.contains("unit1"));

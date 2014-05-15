@@ -103,13 +103,13 @@ void Vault::execute(const QVariantMap &options)
             if (options.contains("unit")) {
                 data["name"] = options.value("unit");
             }
-            config::Config::global()->set(data);
+            config::global()->set(data);
         } else if (action == "unregister") {
             if (!options.contains("unit")) {
                 error::raise({{"action", action}, {"msg", "Needs unit name"}});
             }
 
-            config::Config::global()->rm(options.value("unit").toString());
+            config::global()->rm(options.value("unit").toString());
         } else {
             error::raise({{"msg", "Unknown action"}, {"action", action}});
         }

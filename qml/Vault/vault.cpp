@@ -41,7 +41,7 @@ public:
 
     void syncConfig()
     {
-        vault::config::Config *global = vault::config::Config::global();
+        vault::config::Config *global = vault::config::global();
         m_vault->config().update(global->units());
     }
 
