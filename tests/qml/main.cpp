@@ -8,6 +8,7 @@ int main(int argc, char **argv)
 
     const char *dir = "/tmp/vault-test";
     system(qPrintable(QLatin1String("mkdir ") + dir));
+    system(qPrintable(QLatin1String("mkdir ") + dir + "/home"));
     system("qmltestrunner -input " TEST_DIR " -import " IMPORT_DIR);
     system(qPrintable(QLatin1String("rm -rf ") + dir));
 

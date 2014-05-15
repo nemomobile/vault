@@ -4,7 +4,12 @@
 #include <vault/config.hpp>
 #include <transfer.hpp>
 
+#include <QJSValue>
+
 #include "vault.hpp"
+
+Q_DECLARE_METATYPE(Vault::Operation)
+static const int _vault_operation_ = qRegisterMetaType<Vault::Operation>();
 
 class Worker : public QObject
 {
@@ -268,6 +273,19 @@ void Vault::exportImportPrepare(ImportExportAction action, const QString &path)
 void Vault::exportImportExecute()
 {
     QMetaObject::invokeMethod(m_worker, "eiExecute");
+}
+
+void Vault::registerUnit(const QJSValue &unit, bool global)
+{
+    QVariantMap map = unit.toVariant().toMap();
+    if (global) {
+        vault::config::global()->set(map);
+    } else {
+        if (!m_worker) {
+            initWorker(false);
+        }
+        m_worker->m_vault->registerConfig(map);
+    }
 }
 
 #include "vault.moc"

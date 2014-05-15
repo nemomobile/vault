@@ -6,6 +6,7 @@
 #include <QThread>
 #include <QStringList>
 
+class QJSValue;
 class Worker;
 
 class Vault : public QObject
@@ -47,6 +48,8 @@ public:
     Q_INVOKABLE void removeSnapshot(const QString &name);
     Q_INVOKABLE void exportImportPrepare(ImportExportAction action, const QString &path);
     Q_INVOKABLE void exportImportExecute();
+
+    Q_INVOKABLE void registerUnit(const QJSValue &unit, bool global);
 
 signals:
     void rootChanged();
