@@ -43,7 +43,8 @@ void level(Level level)
 bool is_tracing_level(Level level)
 {
     init();
-    return static_cast<int>(level) >= current_level;
+    auto l = static_cast<int>(level);
+    return current_level ? l >= current_level : false;
 }
 
 }
