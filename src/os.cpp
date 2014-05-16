@@ -163,10 +163,12 @@ QList<QVariantMap> mount()
 
 QString mountpoint(QString const &path)
 {
-    QStringList commands = {"df -P " + path, "tail -1", "awk \"{ print $NF}\""};
+    QStringList commands = {"df -P " + path, "tail -1", "awk '{ print $NF; }'"};
     QStringList options = {"-c", commands.join(" | ")};
     auto data = subprocess::check_output("sh", options);
-    return str(data).split("\n")[0];
+    auto res = str(data).split("\n")[0];
+    debug::info("Mountpoint for", path, "=", path);
+    return res;
 }
 
 /**

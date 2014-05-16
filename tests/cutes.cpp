@@ -1,4 +1,5 @@
 #include <util.hpp>
+#include <os.hpp>
 #include <tut/tut.hpp>
 #include "tests_common.hpp"
 
@@ -22,6 +23,7 @@ tf vault_cutes_test("cutes");
 enum test_ids {
     tid_visit =  1
     , tid_zip
+    , tid_mountpoint
 };
 
 template<> template<>
@@ -77,5 +79,17 @@ void object::test<tid_zip>()
     ensure_eq("2 items, w/o 3rd", res.size(), 2);
 
 }
+
+template<> template<>
+void object::test<tid_mountpoint>()
+{
+    auto res = os::mountpoint(".");
+    ensure_ne("There should be some mountpoint", res.size(), 0);
+    auto s = os::stat(".", {{"fields", "m"}});
+    res = s["mount_point"];
+    if (res != "?")
+        ensure_ne("There should be some mountpoint if it is not ?", res.size(), 0);
+}
+
 
 }
