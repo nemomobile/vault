@@ -40,13 +40,12 @@ double parseBytes(QString const &s, QString const &unit, long multiplier)
         res = value.toDouble(&ok);
     } else {
         res = value.left(num_end).toDouble(&ok);
-        auto exp = capacityUnitExponent(value.right(num_end));
+        auto exp = capacityUnitExponent(value.mid(num_end));
 
         if (unit != "b" && unit != "B")
             exp -= capacityUnitExponent(unit);
 
-        multiplier ^= exp;
-        res = res * multiplier;
+        res = res * pow(multiplier, exp);
     }
     if (!ok)
         error::raise({{"msg", "Can't parse bytes"}, {"value", value}});

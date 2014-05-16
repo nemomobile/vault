@@ -2,6 +2,7 @@
 #include <os.hpp>
 #include <tut/tut.hpp>
 #include "tests_common.hpp"
+#include <util.hpp>
 
 #include <QDebug>
 #include <QVariant>
@@ -24,6 +25,7 @@ enum test_ids {
     tid_visit =  1
     , tid_zip
     , tid_mountpoint
+    , tid_parsebytes
 };
 
 template<> template<>
@@ -91,5 +93,36 @@ void object::test<tid_mountpoint>()
         ensure_ne("There should be some mountpoint if it is not ?", res.size(), 0);
 }
 
+template<> template<>
+void object::test<tid_parsebytes>()
+{
+    double res = util::parseBytes("10");
+    ensure_eq("plain bytes", res, 10);
+    res = util::parseBytes("10K");
+    ensure_eq("10K", res, 1024 * 10);
+    res = util::parseBytes("20Kb");
+    ensure_eq("10Kb", res, 1024 * 20);
+    res = util::parseBytes("30kib");
+    ensure_eq("30Kb", res, 1024 * 30);
+    res = util::parseBytes(" 40 kb ");
+    ensure_eq("40K", res, 1024 * 40);
+
+    ensure_throws<error::Error>("10 k b", &util::parseBytes, " 10 k b ", "b", 1024);
+
+    res = util::parseBytes("50mb");
+    ensure_eq("50mb", res, 1024 * 1024 * 50);
+
+    res = util::parseBytes("60Mib", "b", 1000);
+    ensure_eq("60Mib", res, 1000 * 1000 * 60);
+
+    res = util::parseBytes("70mb", "mb");
+    ensure_eq("70mb", res, 70);
+
+    res = util::parseBytes("1024kb", "mb");
+    ensure_eq("1mb", res, 1);
+
+    res = util::parseBytes("1024kb", "GB");
+    ensure_eq("1024kb=xGb", res, 1. / 1024.);
+}
 
 }
