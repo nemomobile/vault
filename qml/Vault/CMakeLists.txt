@@ -12,6 +12,5 @@ set_target_properties(vault-declarative PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
   )
-install(TARGETS vault-declarative DESTINATION ${DST_LIB}/vault/qml/Vault)
-install(FILES qmldir DESTINATION ${DST_LIB}/vault/qml/Vault)
-
+install(TARGETS vault-declarative DESTINATION lib/qt5/qml/Vault)
+install(FILES qmldir DESTINATION lib/qt5/qml/Vault)
