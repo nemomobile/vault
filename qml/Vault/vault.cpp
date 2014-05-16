@@ -114,6 +114,34 @@ public:
         }
     }
 
+    Q_INVOKABLE void rmSnapshot(const QString &name)
+    {
+        debug::debug("Requesting snapshot removal:", name);
+        for (vault::Snapshot ss: m_vault->snapshots()) {
+            if (ss.name() == name)  {
+                ss.remove();
+                break;
+            }
+        }
+
+        if (snapshots().size() == 0) {
+            // TODO This action should be done only until proper
+            // garbage collection will be introduced
+            debug::warning("Last snapshot is removed, destroy storage to conserve space");
+            QString root = m_vault->root();
+            destroy();
+            try {
+                init(root);
+            } catch (error::Error e) {
+                debug::error("Error reconnecting", e.what());
+                emit error(Vault::RemoveSnapshot, e.what());
+            }
+        } else {
+            debug::debug("There are some snapshots, continue");
+        }
+        emit done(Vault::RemoveSnapshot);
+    }
+
 signals:
     void progress(Vault::Operation op, const QVariantMap &map);
     void error(Vault::Operation op, const QString &error);
@@ -241,28 +269,7 @@ void Vault::resetHead()
 
 void Vault::removeSnapshot(const QString &name)
 {
-    debug::debug("Requesting snapshot removal:", name);
-    for (vault::Snapshot ss: m_worker->m_vault->snapshots()) {
-        if (ss.tag().name() == name)  {
-            ss.remove();
-            break;
-        }
-    }
-
-    if (snapshots().size() == 0) {
-        // TODO This action should be done only until proper
-        // garbage collection will be introduced
-        debug::warning("Last snapshot is removed, destroy storage to conserve space");
-        m_worker->destroy();
-        try {
-            initWorker(true);
-        } catch (error::Error e) {
-            debug::error("Error reconnecting", e.what());
-            emit error(Vault::RemoveSnapshot, e.what());
-        }
-    } else {
-        debug::debug("There are some snapshots, continue");
-    }
+    QMetaObject::invokeMethod(m_worker, "rmSnapshot", Q_ARG(QString, name));
 }
 
 void Vault::exportImportPrepare(ImportExportAction action, const QString &path)
