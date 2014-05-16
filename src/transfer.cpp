@@ -53,7 +53,7 @@ void CardTransfer::invalidateVault()
 
 void CardTransfer::init(vault::Vault *v, Action action, QString const &dump_path)
 {
-    trace(Level::Debug, "Prepare", action);
+    trace(Level::Info, "Prepare", action, dump_path);
     vault_ = v;
 
     if (!hasType(dump_path, QMetaType::QString))
@@ -63,6 +63,8 @@ void CardTransfer::init(vault::Vault *v, Action action, QString const &dump_path
 
     auto path = os::path::join(dump_path, "Backup.tar");
     auto storage = getVault();
+    trace(Level::Info, "Working with", storage->root());
+
     QString dst_dir;
     if (action == Action::Import) {
         if (!os::path::exists(path))
@@ -87,7 +89,7 @@ void CardTransfer::init(vault::Vault *v, Action action, QString const &dump_path
     }
     space_free_ = os::diskFree(dst_dir);
     action_ = action;
-    trace(Level::Debug, "dst=", dst_dir, "free space=", space_free_);
+    trace(Level::Info, "dst=", dst_dir, "free space=", space_free_);
 }
 
 
@@ -140,12 +142,12 @@ Process CardTransfer::doIO(IoCmd const &info)
 void CardTransfer::estimateSpace()
 {
     if (!space_required_) {
-        trace(Level::Debug, "Check required space");
+        trace(Level::Info, "Check required space");
         auto is_src_dir = os::path::isDir(src_);
         // if source is directory - it is .vault, so only .git is packed
         auto real_src = is_src_dir ? os::path::join(src_, ".git") : src_;
         space_required_ = get<double>(os::du(real_src, {{"summarize", is_src_dir}}));
-        trace(Level::Debug, "du=", space_required_);
+        trace(Level::Info, "Need", space_required_, "kb");
         if (!is_src_dir) {
             // empiric multiplier: unpacked
             // files can take more space,
@@ -157,7 +159,7 @@ void CardTransfer::estimateSpace()
                 (os::du(dst_, {{"summarize", !is_src_dir}}));
             space_free_ += to_be_freed;
         }
-        trace(Level::Debug, "total required=", space_required_
+        trace(Level::Info, "total required=", space_required_
               , "free=", space_free_);
     }
     if (space_required_ > space_free_)
@@ -167,7 +169,7 @@ void CardTransfer::estimateSpace()
 
 void CardTransfer::validateDump(QString const &archive, QVariantMap const &err)
 {
-    trace(Level::Debug, "Validate dump", archive);
+    trace(Level::Info, "Validate dump", archive);
     QString prefix(".git/");
     auto prefix_len = prefix.size();
     auto tag_fname = vault::fileName(File::State);
@@ -217,7 +219,6 @@ void CardTransfer::exportStorage(CardTransfer::progressCallback onProgress)
 
 void CardTransfer::importStorage(CardTransfer::progressCallback onProgress)
 {
-    trace(Level::Debug, onProgress);
     auto root = getVault()->root();
     if (dst_ != root)
         error::raise({{"reason", "Logic"}, {"message", "Invalid destination"}
@@ -229,7 +230,7 @@ void CardTransfer::importStorage(CardTransfer::progressCallback onProgress)
 
     onProgress({{"type", "stage"}, {"stage", "Validate"}});
     validateDump(src_, {{"reason", "BadSource"}});
-    trace(Level::Debug, "Clean destination tree");
+    trace(Level::Info, "Clean destination tree");
     os::rmtree(dst_);
     invalidateVault();
     if (os::path::exists(dst_))
@@ -252,7 +253,7 @@ void CardTransfer::importStorage(CardTransfer::progressCallback onProgress)
 
 void CardTransfer::execute(CardTransfer::progressCallback onProgress)
 {
-    // TODO trace(Level::Debug, "Export/import", "msg:", msg);
+    trace(Level::Info, "Export/import", "action", str(action_));
 
     if (!os::path::exists(src_))
         error::raise({{"reason", "Logic"}
