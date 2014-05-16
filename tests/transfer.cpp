@@ -60,6 +60,16 @@ void create_backup()
     the_vault->init(map({{"user.name", "NAME"}, {"user.email", "email@domain.to"}}));
     mktree(unit1_tree, str(get(context, "unit1_dir")));
     register_unit(vault_dir, "unit1");
+
+    bool is_started = false, is_failed = false;
+    the_vault->backup(home, {}, "", [&](const QString &, const QString &status) {
+        if (status == "fail")
+            is_failed = true;
+        else if (status == "begin")
+            is_started = true;
+    });
+    tut::ensure("backup was not started", is_started);
+    tut::ensure("backup is failed", !is_failed);
 }
 
 }
@@ -80,9 +90,9 @@ void object::test<tid_prepare>()
     os::mkdir(tgt_path);
 
     auto git_dir = os::path::join(str(get(context, "vault_dir")), ".git");
-    auto ftree_git_before_export = get_ftree(git_dir);
     auto ctx = cor::make_unique<CardTransfer>();
     ctx->init(the_vault.get(), CardTransfer::Export, tgt_path);
+    auto ftree_git_before_export = get_ftree(git_dir);
 
     // test.equal(export_ctx.src, context.vault_dir);
     // test.equal(os::path.dirname(export_ctx.dst), tgt_path);
