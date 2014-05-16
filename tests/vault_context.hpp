@@ -42,10 +42,9 @@ QVariant mktree(QVariantMap const &tree, QString const &root)
     return util::visit(fn, tree, root);
 }
 
-QVariantMap context;
-
-void setup_context()
+const QVariantMap context = []()
 {
+    QVariantMap context;
     auto home = os::environ("VAULT_TEST_TMP_DIR");
     if (home.isEmpty())
         home = os::mkTemp({{"dir", true}});
@@ -73,7 +72,8 @@ void setup_context()
            , map({{"home", map({{"bin", os::path::join("unit2", "unit2_binaries")},
                                    {"data", os::path::join("unit2", "unit2_data")}})}})}
     };
-}
+    return context;
+}();
 
 const QVariantMap unit1_tree = {
     {"data", map({{"f1", "data1"}})},

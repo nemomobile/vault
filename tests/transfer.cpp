@@ -77,7 +77,6 @@ void create_backup()
 template<> template<>
 void object::test<tid_setup>()
 {
-    setup_context();
 }
 
 template<> template<>
