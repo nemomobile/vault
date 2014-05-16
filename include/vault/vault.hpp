@@ -22,6 +22,7 @@ public:
 
     inline Gittin::Tag tag() const { return m_tag; }
 
+    QString name() const;
     void remove();
 
 private:

@@ -72,7 +72,7 @@ public:
     {
         QStringList snaps;
         for (const vault::Snapshot &ss: m_vault->snapshots()) {
-            snaps << ss.tag().name();
+            snaps << ss.name();
         }
         return snaps;
     }
@@ -278,7 +278,7 @@ void Vault::exportImportExecute()
 QString Vault::notes(const QString &snapshot) const
 {
     for (const vault::Snapshot &ss: m_worker->m_vault->snapshots()) {
-        if (ss.tag().name() == snapshot) {
+        if (ss.name() == snapshot) {
             return ss.tag().notes();
         }
     }

@@ -43,6 +43,11 @@ Snapshot::Snapshot(const Gittin::Tag &tag)
 {
 }
 
+QString Snapshot::name() const
+{
+    return m_tag.name().mid(1);
+}
+
 void Snapshot::remove()
 {
     m_tag.destroy();
