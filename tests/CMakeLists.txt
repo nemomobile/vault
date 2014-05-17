@@ -1,4 +1,4 @@
-pkg_check_modules(TUT tut REQUIRED)
+pkg_check_modules(TUT REQUIRED tut>=0.0.3)
 include_directories(${TUT_INCLUDES})
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})

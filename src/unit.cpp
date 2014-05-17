@@ -398,6 +398,7 @@ void Operation::from_vault(QString const &data_type
 
 void Operation::execute()
 {
+    debug::info("Unit execute. Context:", context);
     QString vault_bin_dir = str(options->value("bin-dir")),
         vault_data_dir = str(options->value("dir"));
 

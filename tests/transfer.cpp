@@ -1,6 +1,8 @@
 #include <transfer.hpp>
 #include "vault_context.hpp"
+#include "tests_common.hpp"
 
+#include "debug.hpp"
 #include "util.hpp"
 #include "sys.hpp"
 #include "os.hpp"
@@ -83,32 +85,35 @@ template<> template<>
 void object::test<tid_prepare>()
 {
     auto home = str(get(context, "home"));
+    auto vault_dir = str(get(context, "vault_dir"));
     create_backup();
     // auto is_failed = false, err, export_ctx, tgt_path, rc = -1, import_ctx;
     auto tgt_path = os::path::join(str(get(context, "home")), "sd");
     os::mkdir(tgt_path);
 
-    auto git_dir = os::path::join(str(get(context, "vault_dir")), ".git");
-    auto ctx = cor::make_unique<CardTransfer>();
-    ctx->init(the_vault.get(), CardTransfer::Export, tgt_path);
+    auto git_dir = os::path::join(vault_dir, ".git");
+    auto export_ctx = cor::make_unique<CardTransfer>();
+    export_ctx->init(the_vault.get(), CardTransfer::Export, tgt_path);
     auto ftree_git_before_export = get_ftree(git_dir);
 
-    // test.equal(export_ctx.src, context.vault_dir);
-    // test.equal(os::path.dirname(export_ctx.dst), tgt_path);
-    // test.equal(export_ctx.action, "export");
-    // test.ge(export_ctx.space_free, 1);
+    ensure_eq("Source", export_ctx->getSrc(), vault_dir);
+    ensure_eq("Dst", os::path::dirName(export_ctx->getDst()), tgt_path);
+    ensure_eq("Export Action", export_ctx->getAction(), CardTransfer::Export);
+    ensure_ge("Export Space", (int)export_ctx->getSpace(), 1);
 
-    // api.export_import_execute
-    // (export_ctx
-    //  , {{"on_done", function}(ret_rc) {
-    //          rc = ret_rc;
-    //          }
-    //     , {"on_error", function}(e) {
-    //         is_failed = true;
-    //         err = e;
-    //     }});
-    // api.wait();
-
+    QStringList stages;
+    auto on_progress = [&stages](QVariantMap &&data) {
+        ensure("There should be progress report type"
+               , data.find("type") != data.end());
+        auto t = str(data["type"]);
+        if (t == "stage") {
+            auto stage = str(data["stage"]);
+            stages.push_back(stage);
+        }
+    };
+    export_ctx->execute(on_progress);
+    ensure_eq("Expected stages", stages
+              , QStringList({"Copy", "Flush", "Validate"}));
     // test.ok(!is_failed, "Failed because " + util.dump("ERR", err));
     // test.ok(os::path.isFile(export_ctx.dst));
     // var content = subprocess.check_output
