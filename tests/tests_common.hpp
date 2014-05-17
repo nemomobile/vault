@@ -4,6 +4,7 @@
 #include <QStringList>
 
 namespace {
+
 template <class CharT>
 std::basic_ostream<CharT>& operator <<
 (std::basic_ostream<CharT> &dst, QStringList const &src)
@@ -12,6 +13,15 @@ std::basic_ostream<CharT>& operator <<
         dst  << v.toStdString() << ",";
     return dst;
 }
+
+template <class CharT>
+std::basic_ostream<CharT>& operator <<
+(std::basic_ostream<CharT> &dst, QString const &src)
+{
+    dst << src.toStdString();
+    return dst;
+}
+
 }
 
 #endif // _VAULT_TESTS_COMMON_HPP_
