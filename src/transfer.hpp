@@ -46,6 +46,12 @@ public:
     void init(vault::Vault *, Action, QString const &);
     void execute(progressCallback);
 
+    inline QString getSrc() const { return src_; }
+    inline QString getDst() const { return dst_; }
+    inline Action getAction() const { return action_; }
+    inline double getSpace() const { return space_free_; }
+    inline double getRequired() const { return space_required_; }
+
 signals:
     void vaultChanged();
 private:
@@ -55,11 +61,6 @@ private:
     void exportStorage(progressCallback);
     void importStorage(progressCallback);
 
-    inline QString getSrc() const { return src_; }
-    inline QString getDst() const { return dst_; }
-    inline Action getAction() const { return action_; }
-    inline double getSpace() const { return space_free_; }
-    inline double getRequired() const { return space_required_; }
     vault::Vault *getVault();
     void invalidateVault();
 
