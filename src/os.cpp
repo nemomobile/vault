@@ -320,15 +320,23 @@ QVariant du(QString const &path, QVariantMap &&options)
 
     auto out = str(subprocess::check_output("du", cmd_options));
     auto data = filterEmpty(out.split("\n"));
-    if (data.size() == 1) {
-        return data[0].toDouble();
-    }
+    auto extract_size = [](QString const &line) {
+        auto s = line.trimmed();
+        auto pos = s.indexOf(QRegExp("\\s"));
+        if (pos < 0)
+            pos = s.size();
+        return util::parseBytes(s.left(pos), "K");
+    };
+    if (data.size() == 1)
+        return extract_size(data[0]);
 
     static const QRegExp spaces_re("\\s");
     auto fields = util::map<QStringList>([](QString const &v) {
-            return v.split(spaces_re); }, data);
-    auto get_sizes = [](QStringList const &v) {
-        return std::make_tuple(v[1], v[0].toInt()); };
+            return v.split(spaces_re);
+        }, data);
+    auto get_sizes = [&extract_size](QStringList const &v) {
+        return std::make_tuple(v[1], extract_size(v[0]));
+    };
     auto pairs = util::map<map_tuple_type>(get_sizes, fields);
     return map(pairs);
 }

@@ -1,4 +1,5 @@
 #include "util.hpp"
+#include "debug.hpp"
 
 #include <QString>
 #include <QMap>
@@ -31,6 +32,7 @@ long capacityUnitExponent(QString const &name)
 
 double parseBytes(QString const &s, QString const &unit, long multiplier)
 {
+    debug::debug("parseBytes", s, unit);
     auto value = s.trimmed();
     static const QRegExp not_num_re("[^0-9.,]");
     auto num_end = value.indexOf(not_num_re);
