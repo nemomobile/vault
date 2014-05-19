@@ -5,6 +5,13 @@
 
 #include <vault/vault.hpp>
 
+void set(QVariantMap &map, const QCommandLineParser &parser, const QString &option, bool optional = false)
+{
+    if (!optional || parser.isSet(option)) {
+        map.insert(option, parser.value(option));
+    }
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
@@ -13,31 +20,33 @@ int main(int argc, char **argv)
     parser.setApplicationDescription("The Vault");
     parser.addHelpOption();
 
-    QCommandLineOption actionOption(QStringList() << "a" << "action", "action", "action");
-    parser.addOption(actionOption);
-    QCommandLineOption vaultOption(QStringList() << "v" << "vault", "vault", "path");
-    parser.addOption(vaultOption);
-    QCommandLineOption homeOption(QStringList() << "H" << "home", "home", "home");
-    parser.addOption(homeOption);
+    parser.addOption(QCommandLineOption(QStringList() << "a" << "action", "action", "action"));
+    parser.addOption(QCommandLineOption(QStringList() << "V" << "vault", "vault", "path"));
+    parser.addOption(QCommandLineOption(QStringList() << "H" << "home", "home", "home"));
+    parser.addOption(QCommandLineOption(QStringList() << "G" << "global", "global"));
+    parser.addOption(QCommandLineOption(QStringList() << "d" << "data", "data", "data"));
+    parser.addOption(QCommandLineOption(QStringList() << "M" << "unit", "unit", "unit"));
+    parser.addOption(QCommandLineOption(QStringList() << "c" << "config-path", "config-path", "config-path", "/etc/the-vault.json"));
+    parser.addOption(QCommandLineOption(QStringList() << "g" << "git-config", "git-config", "git-config"));
+    parser.addOption(QCommandLineOption(QStringList() << "m" << "message", "message", "message"));
+    parser.addOption(QCommandLineOption(QStringList() << "t" << "tag", "tag", "tag"));
 
     parser.process(app);
 
-    vault::Vault vault(parser.value("vault"));
-    QString action = parser.value("action");
-    if (action == "init") {
-        QVariantMap config;
-        config.insert("user.name", "Some Sailor");
-        qDebug()<<vault.init(config);
-    } else if (action == "backup" || action == "export") {
-        vault.backup(parser.value(homeOption), QStringList() << "unit1" << "unit2", "");
-    } else if (action == "list-snapshots") {
-        for (const vault::Snapshot &snapshot: vault.snapshots()) {
-            qDebug() << snapshot.tag();
-        }
-    }
+    QVariantMap options;
+    set(options, parser, "action");
+    set(options, parser, "vault", true);
+    set(options, parser, "home", true);
+    set(options, parser, "data", true);
+    set(options, parser, "unit", true);
+    set(options, parser, "config-path", true);
+    set(options, parser, "git-config", true);
+    set(options, parser, "message", true);
+    set(options, parser, "tag", true);
 
+    options.insert("global", parser.isSet("global"));
 
-    qDebug()<<parser.value("action");
+    vault::Vault::execute(options);
 
     return 0;
 }
