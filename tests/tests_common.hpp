@@ -14,6 +14,15 @@ std::basic_ostream<CharT>& operator <<
     return dst;
 }
 
+template <class CharT, class T>
+std::basic_ostream<CharT>& operator <<
+(std::basic_ostream<CharT> &dst, QSet<T> const &src)
+{
+    for (auto v : src)
+        dst  << str(v) << ",";
+    return dst;
+}
+
 template <class CharT>
 std::basic_ostream<CharT>& operator <<
 (std::basic_ostream<CharT> &dst, QString const &src)

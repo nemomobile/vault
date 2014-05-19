@@ -53,13 +53,19 @@ void register_unit(QString const &vault_dir, QString const &name)
     return vault::Vault::execute(data);
 };
 
+void init_vault(QString const &vault_dir)
+{
+    tut::ensure("Vault dir is path", !vault_dir.isEmpty());
+    the_vault.reset(new Vault(vault_dir));
+    the_vault->init(map({{"user.name", "NAME"}, {"user.email", "email@domain.to"}}));
+}
+
+
 void create_backup()
 {
     auto home = str(get(context, "home"));
     auto vault_dir = str(get(context, "vault_dir"));
-    tut::ensure("Vault dir", !vault_dir.isEmpty());
-    the_vault.reset(new Vault(vault_dir));
-    the_vault->init(map({{"user.name", "NAME"}, {"user.email", "email@domain.to"}}));
+    init_vault(vault_dir);
     mktree(unit1_tree, str(get(context, "unit1_dir")));
     register_unit(vault_dir, "unit1");
 
@@ -100,8 +106,8 @@ void object::test<tid_prepare>()
     ensure_eq("Source", src, vault_dir);
     ensure_eq("Dst", os::path::dirName(dst), tgt_path);
     ensure_eq("Export Action", export_ctx->getAction(), CardTransfer::Export);
-    int space_before = export_ctx->getSpace();
-    ensure_ge("Export Space", space_before, 1);
+    auto space_before = export_ctx->getSpace();
+    ensure_ge("Export Space", (int)space_before, 1);
 
     QStringList stages;
     auto on_progress = [&stages](QVariantMap &&data) {
@@ -127,58 +133,40 @@ void object::test<tid_prepare>()
         auto is_tag = (name == tag_fname);
         ensure(("Unexpected file:" + name).toStdString(), is_git_file || is_tag);
     }
-    // util.map(content, function(line) {
-    //     test.ok(/^\.git/.test(line) || line === tag_fname
-    //             , "Unexpected file:" + line);
-    // });
-    // auto ftree_git_after_export = get_ftree(git_dir);
-    // auto before_diff_after
-    //     = _.difference(ftree_git_before_export, ftree_git_after_export);
-    // auto after_diff_before
-    //     = _.difference(ftree_git_after_export, ftree_git_before_export);
-    // test.deepEqual(before_diff_after, []);
-    // test.deepEqual(after_diff_before, []);
+    auto ftree_git_after_export = get_ftree(git_dir);
+    auto before_wo_after = ftree_git_before_export - ftree_git_after_export;
+    auto after_wo_before = ftree_git_after_export - ftree_git_before_export;
+    // compare to see difference on failure
+    ensure_eq("Something new appeared in the source tree", after_wo_before, QSet<QString>());
+    ensure_eq("Something was removed", before_wo_after, QSet<QString>());
 
     // // import
 
-    // auto test_import = function() {
-    //     import_ctx = undefined;
-    //     api.export_import_prepare
-    //     ({{"action", "import"}, {"path", tgt_path}}
-    //      , {{"on_done", function}(ctx) {
-    //              import_ctx = ctx;
-    //              },
-    //         {"on_error", function}(e) {
-    //             is_failed = true;
-    //             err = e;
-    //         }});
-    //     api.wait();
-    //     test.ok(!is_failed, "Failed because " + util.dump("ERR", err));
-    //     test.ok(typeof import_ctx === "object");
-    //     test.equal(import_ctx.dst, context.vault_dir);
-    //     test.equal(os::path.dirname(import_ctx.src), tgt_path);
-    //     test.equal(import_ctx.action, "import");
-    //     test.ge(import_ctx.space_free, 1);
+    vault_dir = os::path::join(home, "vault_imported");
+    git_dir = os::path::join(vault_dir, ".git");
+    init_vault(vault_dir);
+    auto import_ctx = cor::make_unique<CardTransfer>();
+    import_ctx->init(the_vault.get(), CardTransfer::Import, tgt_path);
+    auto ftree_git_before_import = get_ftree(git_dir);
 
-    //     api.export_import_execute
-    //     (import_ctx
-    //      , { {"on_done", function}(ret_rc) {
-    //          rc = ret_rc;
-    //      }, {"on_error", function}(e) {
-    //          is_failed = true;
-    //          err = e;
-    //      }});
-    //     api.wait();
+    dst = import_ctx->getDst(), src = import_ctx->getSrc();
+    ensure_eq("Import Dst", dst, vault_dir);
+    ensure_eq("Import Src", os::path::dirName(src), tgt_path);
+    ensure_eq("Import Action", import_ctx->getAction(), CardTransfer::Import);
+    space_before = import_ctx->getSpace();
+    ensure_ge("Import Space", space_before, 1);
 
-    //     test.ok(!is_failed, "Failed because " + util.dump("ERR", err));
-    //     auto ftree_git_after_import = get_ftree(git_dir);
-    //     test.deepEqual(ftree_git_before_export, ftree_git_after_import);
-    // };
-    // test_import();
-    // os::rmtree(context.vault_dir);
-    // test.ok(!os::path.exists(context.vault_dir));
-    // api.connect({{"home", home}, {"vault", vault_dir}});
-    // test_import();
+    stages.clear();
+    import_ctx->execute(on_progress);
+    ensure_eq("Expected stages", stages
+              , QStringList({"Validate", "Copy"}));
+
+    auto ftree_git_after_import = get_ftree(git_dir);
+    before_wo_after = ftree_git_before_export - ftree_git_after_import;
+    after_wo_before = ftree_git_after_import - ftree_git_before_export;
+    // compare to see difference on failure
+    ensure_eq("Import: something appeared in the source tree", after_wo_before, QSet<QString>());
+    ensure_eq("Import: Something was removed", before_wo_after, QSet<QString>());
 }
 
 

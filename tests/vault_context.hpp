@@ -3,18 +3,19 @@
 
 #include <subprocess.hpp>
 #include <os.hpp>
-
 #include <tut/tut.hpp>
+
+#include <QSet>
 
 namespace {
 
-QStringList get_ftree(QString const &root)
+QSet<QString> get_ftree(QString const &root)
 {
     Process ps;
     ps.setWorkingDirectory(root);
     auto ftree = filterEmpty(str(ps.check_output("find", {"."})).split("\n"));
     ftree.sort();
-    return ftree;
+    return QSet<QString>::fromList(ftree);
 }
 
 QVariant mktree(QVariantMap const &tree, QString const &root)
@@ -77,7 +78,7 @@ const QVariantMap context = []()
 
 const QVariantMap unit1_tree = {
     {"data", map({{"f1", "data1"}})},
-    {"binaries", map({{}})}
+    {"binaries", map({{"b1", "bin data"}})}
 };
 
 }
