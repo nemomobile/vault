@@ -1,9 +1,9 @@
 #include <vault/vault.hpp>
 
-#include "os.hpp"
-#include "error.hpp"
-#include "debug.hpp"
-#include "subprocess.hpp"
+#include "vault/os.hpp"
+#include "vault/error.hpp"
+#include "vault/debug.hpp"
+#include "vault/subprocess.hpp"
 
 #include <gittin/commit.hpp>
 #include <gittin/branch.hpp>

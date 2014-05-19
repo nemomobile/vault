@@ -6,9 +6,9 @@
 #include <gittin/commit.hpp>
 
 #include <vault/config.hpp>
-#include "error.hpp"
-#include "os.hpp"
-#include "debug.hpp"
+#include "vault/error.hpp"
+#include "vault/os.hpp"
+#include "vault/debug.hpp"
 #include "json.hpp"
 
 namespace vault { namespace config {

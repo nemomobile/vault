@@ -1,7 +1,7 @@
 #ifndef _CUTES_SYS_HPP_
 #define _CUTES_SYS_HPP_
 
-#include "util.hpp"
+#include "vault/util.hpp"
 
 #include <QSet>
 

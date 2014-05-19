@@ -1,7 +1,7 @@
 #ifndef _CUTES_JSON_HPP_
 #define _CUTES_JSON_HPP_
 
-#include "os.hpp"
+#include "vault/os.hpp"
 
 #include <QJsonObject>
 #include <QJsonArray>

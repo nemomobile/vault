@@ -1,5 +1,5 @@
-#include "util.hpp"
-#include "debug.hpp"
+#include "vault/util.hpp"
+#include "vault/debug.hpp"
 
 #include <QString>
 #include <QMap>

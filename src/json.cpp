@@ -1,5 +1,5 @@
 #include "json.hpp"
-#include "os.hpp"
+#include "vault/os.hpp"
 
 #include <QJsonDocument>
 #include <QJsonObject>

@@ -1,9 +1,9 @@
 #include "transfer.hpp"
 
-#include "os.hpp"
-#include "subprocess.hpp"
-#include "debug.hpp"
-#include "error.hpp"
+#include "vault/os.hpp"
+#include "vault/subprocess.hpp"
+#include "vault/debug.hpp"
+#include "vault/error.hpp"
 #include <vault/vault.hpp>
 
 #include "QString"

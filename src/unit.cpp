@@ -1,9 +1,9 @@
 #include <vault/unit.hpp>
 
-#include "util.hpp"
-#include "os.hpp"
+#include "vault/util.hpp"
+#include "vault/os.hpp"
 #include "json.hpp"
-#include "debug.hpp"
+#include "vault/debug.hpp"
 
 #include <QString>
 

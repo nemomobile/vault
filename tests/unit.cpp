@@ -1,6 +1,6 @@
-#include "sys.hpp"
-#include "os.hpp"
-#include "subprocess.hpp"
+#include "vault/sys.hpp"
+#include "vault/os.hpp"
+#include "vault/subprocess.hpp"
 #include <vault/config.hpp>
 
 #include "tests_common.hpp"

@@ -1,8 +1,8 @@
-#include <util.hpp>
-#include <os.hpp>
+#include <vault/util.hpp>
+#include <vault/os.hpp>
 #include <tut/tut.hpp>
 #include "tests_common.hpp"
-#include <util.hpp>
+#include <vault/util.hpp>
 
 #include <QDebug>
 #include <QVariant>

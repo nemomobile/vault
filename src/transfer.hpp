@@ -1,8 +1,8 @@
 #ifndef _VAULT_TRANSFER_HPP_
 #define _VAULT_TRANSFER_HPP_
 
-#include "util.hpp"
-#include "subprocess.hpp"
+#include "vault/util.hpp"
+#include "vault/subprocess.hpp"
 
 #include <QString>
 #include <QVariant>

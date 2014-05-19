@@ -1,7 +1,7 @@
-#include "subprocess.hpp"
-#include "error.hpp"
-#include "debug.hpp"
-#include "util.hpp"
+#include "vault/subprocess.hpp"
+#include "vault/error.hpp"
+#include "vault/debug.hpp"
+#include "vault/util.hpp"
 
 namespace subprocess {
 

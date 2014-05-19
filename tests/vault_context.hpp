@@ -1,8 +1,8 @@
 #ifndef _VAULT_TESTS_VAULT_CONTEXT_HPP_
 #define _VAULT_TESTS_VAULT_CONTEXT_HPP_
 
-#include <subprocess.hpp>
-#include <os.hpp>
+#include <vault/subprocess.hpp>
+#include <vault/os.hpp>
 #include <tut/tut.hpp>
 
 #include <QSet>

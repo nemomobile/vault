@@ -1,8 +1,8 @@
 #include <vault/unit.hpp>
 
-#include <util.hpp>
-#include <sys.hpp>
-#include <error.hpp>
+#include <vault/util.hpp>
+#include <vault/sys.hpp>
+#include <vault/error.hpp>
 
 #include <QCoreApplication>
 #include <QDebug>

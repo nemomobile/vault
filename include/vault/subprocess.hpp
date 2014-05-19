@@ -10,7 +10,6 @@ namespace subprocess {
 
 class Process : public QObject
 {
-    Q_OBJECT
 public:
     Process()
         : ps(new QProcess())

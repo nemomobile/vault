@@ -1,7 +1,7 @@
-#include "debug.hpp"
-#include "util.hpp"
-#include "os.hpp"
-#include "subprocess.hpp"
+#include "vault/debug.hpp"
+#include "vault/util.hpp"
+#include "vault/os.hpp"
+#include "vault/subprocess.hpp"
 #include "json.hpp"
 #include <QCoreApplication>
 #include <QDebug>

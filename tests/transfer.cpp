@@ -2,11 +2,11 @@
 #include "vault_context.hpp"
 #include "tests_common.hpp"
 
-#include "debug.hpp"
-#include "util.hpp"
-#include "sys.hpp"
-#include "os.hpp"
-#include "subprocess.hpp"
+#include <vault/debug.hpp>
+#include <vault/util.hpp>
+#include <vault/sys.hpp>
+#include <vault/os.hpp>
+#include <vault/subprocess.hpp>
 #include <vault/config.hpp>
 #include <vault/vault.hpp>
 
