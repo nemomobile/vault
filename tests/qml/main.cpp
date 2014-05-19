@@ -7,10 +7,10 @@ int main(int argc, char **argv)
     QCoreApplication app(argc, argv);
 
     const char *dir = "/tmp/vault-test";
-    system(qPrintable(QLatin1String("mkdir ") + dir));
-    system(qPrintable(QLatin1String("mkdir ") + dir + "/home"));
-    system("qmltestrunner -input " TEST_DIR " -import " IMPORT_DIR);
-    system(qPrintable(QLatin1String("rm -rf ") + dir));
+    int ret = system(qPrintable(QLatin1String("mkdir ") + dir));
+    if (!ret) ret = system(qPrintable(QLatin1String("mkdir ") + dir + "/home"));
+    if (!ret) ret = system("qmltestrunner -input " TEST_DIR " -import " IMPORT_DIR);
+    if (!ret) ret = system(qPrintable(QLatin1String("rm -rf ") + dir));
 
-    return 0;
+    return ret;
 }
