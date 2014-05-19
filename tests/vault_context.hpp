@@ -78,7 +78,7 @@ const QVariantMap context = []()
 
 const QVariantMap unit1_tree = {
     {"data", map({{"f1", "data1"}})},
-    {"binaries", map({{"b1", "bin data"}})}
+    {"binaries", map({{"b1", "bin data"}, {"b2", "bin data 2"}})}
 };
 
 }
