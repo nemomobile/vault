@@ -96,10 +96,12 @@ void object::test<tid_prepare>()
     export_ctx->init(the_vault.get(), CardTransfer::Export, tgt_path);
     auto ftree_git_before_export = get_ftree(git_dir);
 
-    ensure_eq("Source", export_ctx->getSrc(), vault_dir);
-    ensure_eq("Dst", os::path::dirName(export_ctx->getDst()), tgt_path);
+    auto dst = export_ctx->getDst(), src = export_ctx->getSrc();
+    ensure_eq("Source", src, vault_dir);
+    ensure_eq("Dst", os::path::dirName(dst), tgt_path);
     ensure_eq("Export Action", export_ctx->getAction(), CardTransfer::Export);
-    ensure_ge("Export Space", (int)export_ctx->getSpace(), 1);
+    int space_before = export_ctx->getSpace();
+    ensure_ge("Export Space", space_before, 1);
 
     QStringList stages;
     auto on_progress = [&stages](QVariantMap &&data) {
@@ -114,27 +116,32 @@ void object::test<tid_prepare>()
     export_ctx->execute(on_progress);
     ensure_eq("Expected stages", stages
               , QStringList({"Copy", "Flush", "Validate"}));
-    // test.ok(!is_failed, "Failed because " + util.dump("ERR", err));
-    // test.ok(os::path.isFile(export_ctx.dst));
-    // var content = subprocess.check_output
-    //     ("tar", ["tf", export_ctx.dst]).toString().split("\n");
-    // content = string.removeEmpty(content);
-    // var tag_fname = vault.info.files.state;
+    ensure(("Dst file should exist" + dst).toStdString(), os::path::isFile(dst));
+    auto names = str(subprocess::check_output("tar", {"tf", dst})).split("\n");
+    names = filterEmpty(names);
+    auto tag_fname = vault::fileName(vault::File::State);
+    for (auto it = names.begin(); it != names.end(); ++it) {
+        auto const &name = *it;
+        static QRegExp const git_file_re("^\\.git/.*$"); 
+        auto is_git_file = git_file_re.exactMatch(name);
+        auto is_tag = (name == tag_fname);
+        ensure(("Unexpected file:" + name).toStdString(), is_git_file || is_tag);
+    }
     // util.map(content, function(line) {
     //     test.ok(/^\.git/.test(line) || line === tag_fname
     //             , "Unexpected file:" + line);
     // });
-    // var ftree_git_after_export = get_ftree(git_dir);
-    // var before_diff_after
+    // auto ftree_git_after_export = get_ftree(git_dir);
+    // auto before_diff_after
     //     = _.difference(ftree_git_before_export, ftree_git_after_export);
-    // var after_diff_before
+    // auto after_diff_before
     //     = _.difference(ftree_git_after_export, ftree_git_before_export);
     // test.deepEqual(before_diff_after, []);
     // test.deepEqual(after_diff_before, []);
 
     // // import
 
-    // var test_import = function() {
+    // auto test_import = function() {
     //     import_ctx = undefined;
     //     api.export_import_prepare
     //     ({{"action", "import"}, {"path", tgt_path}}
@@ -164,7 +171,7 @@ void object::test<tid_prepare>()
     //     api.wait();
 
     //     test.ok(!is_failed, "Failed because " + util.dump("ERR", err));
-    //     var ftree_git_after_import = get_ftree(git_dir);
+    //     auto ftree_git_after_import = get_ftree(git_dir);
     //     test.deepEqual(ftree_git_before_export, ftree_git_after_import);
     // };
     // test_import();
