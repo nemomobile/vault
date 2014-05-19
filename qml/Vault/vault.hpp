@@ -42,7 +42,7 @@ public:
 
     Q_INVOKABLE void connectVault(bool reconnect);
     Q_INVOKABLE void startBackup(const QString &message, const QStringList &units);
-    Q_INVOKABLE void startRestore(const QString &tag, const QStringList &units);
+    Q_INVOKABLE void startRestore(const QString &snapshot, const QStringList &units);
     Q_INVOKABLE QStringList snapshots() const;
     Q_INVOKABLE QVariantMap units() const;
     Q_INVOKABLE void resetHead();

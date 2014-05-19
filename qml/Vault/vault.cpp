@@ -52,10 +52,10 @@ public:
         m_vault->config().update(global->units());
     }
 
-    Q_INVOKABLE void restore(const QString &home, const QStringList &units, const QString &tag)
+    Q_INVOKABLE void restore(const QString &home, const QStringList &units, const QString &snapshot)
     {
         debug::debug("Restore: home", home);
-        m_vault->restore(tag, home, units, [this](const QString unit, const QString &status) {
+        m_vault->restore(snapshot, home, units, [this](const QString unit, const QString &status) {
             emit progress(Vault::Restore, {{"unit", unit}, {"status", status}});
         });
         emit done(Vault::Restore);
@@ -228,7 +228,7 @@ void Vault::connectVault(bool reconnect)
     initWorker(reconnect);
 }
 
-void Vault::startRestore(const QString &tag, const QStringList &units)
+void Vault::startRestore(const QString &snapshot, const QStringList &units)
 {
     if (units.isEmpty()) {
         debug::info("Nothing to restore");
@@ -236,7 +236,7 @@ void Vault::startRestore(const QString &tag, const QStringList &units)
         return;
     }
 
-    QMetaObject::invokeMethod(m_worker, "restore", Q_ARG(QString, m_home), Q_ARG(QStringList, units), Q_ARG(QString, tag));
+    QMetaObject::invokeMethod(m_worker, "restore", Q_ARG(QString, m_home), Q_ARG(QStringList, units), Q_ARG(QString, snapshot));
 }
 
 void Vault::startBackup(const QString &message, const QStringList &units)

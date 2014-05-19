@@ -323,9 +323,9 @@ void Vault::resetMaster()
     m_vcs.checkout("master", CheckoutOptions::Force);
 }
 
-Vault::Result Vault::restore(const QString &tag, const QString &home, const QStringList &units, const ProgressCallback &callback)
+Vault::Result Vault::restore(const QString &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
-    Snapshot ss(Gittin::Tag(&m_vcs, tag));
+    Snapshot ss(Gittin::Tag(&m_vcs, QString(">") + snapshot));
     return restore(ss, home, units, callback);
 }
 
@@ -359,6 +359,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
         }
     }
 
+    m_vcs.checkout("master");
     return res;
 }
 

@@ -49,7 +49,7 @@ public:
     bool init(const QVariantMap &config = QVariantMap());
     Result backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback = nullptr);
     Result restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
-    Result restore(const QString &tag, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
+    Result restore(const QString &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback = nullptr);
     bool clear(const QVariantMap &options);
 
     QList<Snapshot> snapshots() const;
