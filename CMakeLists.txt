@@ -47,3 +47,14 @@ add_subdirectory(examples)
 add_subdirectory(tests)
 add_subdirectory(units)
 add_subdirectory(qml/Vault)
+
+configure_file(vault-unit.pc.in vault-unit.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vault-unit.pc DESTINATION ${DST_LIB}/pkgconfig)
+
+install(
+  DIRECTORY include/vault
+  DESTINATION include
+  FILES_MATCHING
+  PATTERN "*.hpp"
+  PATTERN "*.h"
+)

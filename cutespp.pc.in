@@ -1,0 +1,9 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+libdir=${prefix}/@DST_LIB@
+includedir=${prefix}/include
+
+Name: cutespp
+Description: cutespp library
+Version: 0.0.1
+Libs: -lcutespp -L${libdir}
+Cflags: -I${includedir}
