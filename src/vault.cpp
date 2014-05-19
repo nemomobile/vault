@@ -468,7 +468,7 @@ struct Unit
     {
         QString blobStorage = os::path::join(m_vcs->path(), ".git", "blobs");
         QByteArray sha = m_vcs->hashObject(file);
-        QString blobDir = blobStorage + sha.left(2);
+        QString blobDir = os::path::join(blobStorage, sha.left(2));
         QString blobFName = os::path::join(blobDir, sha.mid(2));
         QString linkFName = os::path::join(m_vcs->path(), file);
 
