@@ -1,5 +1,12 @@
 #ifndef _CUTES_ERROR_HPP_
 #define _CUTES_ERROR_HPP_
+/**
+ * @file error.hpp
+ * @brief Unified exceptions
+ * @author Denis Zalevskiy <denis.zalevskiy@jolla.com>
+ * @copyright (C) 2014 Jolla Ltd.
+ * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ */
 
 #include <exception>
 #include <QVariantMap>

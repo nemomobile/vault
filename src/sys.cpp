@@ -1,3 +1,11 @@
+/**
+ * @file sys.cpp
+ * @brief Command line parsing and generation etc.
+ * @author Denis Zalevskiy <denis.zalevskiy@jolla.com>
+ * @copyright (C) 2014 Jolla Ltd.
+ * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ */
+
 #include "vault/sys.hpp"
 
 #include <QStringList>

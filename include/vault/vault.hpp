@@ -1,5 +1,12 @@
 #ifndef _VAULT_VAULT_HPP_
 #define _VAULT_VAULT_HPP_
+/**
+ * @file vault.hpp
+ * @brief Vault management API
+ * @author Giulio Camuffo <giulio.camuffo@jollamobile.com>
+ * @copyright (C) 2014 Jolla Ltd.
+ * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+ */
 
 #include <functional>
 
