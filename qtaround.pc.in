@@ -5,5 +5,5 @@ includedir=${prefix}/include
 Name: cutespp
 Description: cutespp library
 Version: @VERSION@
-Libs: -lcutespp -L${libdir}
+Libs: -lqtaround -L${libdir}
 Cflags: -I${includedir}
