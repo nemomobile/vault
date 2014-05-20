@@ -46,7 +46,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libvault-transfer.so*
 %{_libdir}/libvault-unit.so*
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
-%{_bindir}/vault-cli
+%{_bindir}/vault
 
 %files devel
 %defattr(-,root,root,-)

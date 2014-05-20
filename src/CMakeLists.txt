@@ -30,7 +30,8 @@ install(TARGETS vault-core DESTINATION ${DST_LIB})
 
 add_executable(vault-cli vault-cli.cpp)
 target_link_libraries(vault-cli vault-core)
-install(TARGETS vault-cli DESTINATION bin RENAME vault)
+set_target_properties(vault-cli PROPERTIES OUTPUT_NAME vault)
+install(TARGETS vault-cli DESTINATION bin)
 
 add_library(vault-unit SHARED unit.cpp)
 qt5_use_modules(vault-unit Core)
