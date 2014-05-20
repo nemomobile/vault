@@ -45,7 +45,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_D
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
-add_subdirectory(units)
 add_subdirectory(qml/Vault)
 
 configure_file(vault-unit.pc.in vault-unit.pc @ONLY)
