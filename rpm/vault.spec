@@ -7,13 +7,14 @@ Group: Development/Liraries
 URL: https://github.com/nemomobile/vault
 Source0: %{name}-%{version}.tar.bz2
 BuildRequires: cmake >= 2.8
-BuildRequires: pkgconfig(cor)
+BuildRequires: pkgconfig(cor) >= 0.1.14
 BuildRequires: pkgconfig(gittin)
-BuildRequires: pkgconfig(tut)
+BuildRequires: pkgconfig(tut) >= 0.0.3
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Provides: the-vault
-Obsoletes: the-vault
+# last known available version was 0.8.17.1
+Provides: the-vault = 0.8.19
+Obsoletes: the-vault <= 0.8.18
 
 %description
 Incremental backup/restore framework
