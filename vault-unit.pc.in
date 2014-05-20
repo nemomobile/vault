@@ -4,6 +4,6 @@ includedir=${prefix}/include
 
 Name: vault-unit
 Description: vault-unit library
-Version: 0.0.1
+Version: @VERSION@
 Libs: -lvault-unit -L${libdir}
 Cflags: -I${includedir}

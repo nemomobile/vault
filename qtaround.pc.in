@@ -4,6 +4,6 @@ includedir=${prefix}/include
 
 Name: cutespp
 Description: cutespp library
-Version: 0.0.1
+Version: @VERSION@
 Libs: -lcutespp -L${libdir}
 Cflags: -I${includedir}
