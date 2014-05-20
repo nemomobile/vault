@@ -8,8 +8,8 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/util.hpp"
-#include "vault/subprocess.hpp"
+#include <qtaround/util.hpp>
+#include <qtaround/subprocess.hpp>
 
 #include <QString>
 #include <QVariant>

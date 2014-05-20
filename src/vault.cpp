@@ -8,10 +8,10 @@
 
 #include <vault/vault.hpp>
 
-#include "vault/os.hpp"
-#include "vault/error.hpp"
-#include "vault/debug.hpp"
-#include "vault/subprocess.hpp"
+#include <qtaround/os.hpp>
+#include <qtaround/error.hpp>
+#include <qtaround/debug.hpp>
+#include <qtaround/subprocess.hpp>
 
 #include <gittin/commit.hpp>
 #include <gittin/branch.hpp>

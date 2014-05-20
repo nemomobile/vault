@@ -1,12 +1,11 @@
-#include "vault/sys.hpp"
-#include "vault/os.hpp"
-#include "vault/subprocess.hpp"
+#include <qtaround/sys.hpp>
+#include <qtaround/os.hpp>
+#include <qtaround/subprocess.hpp>
+
 #include <vault/config.hpp>
 
 #include "tests_common.hpp"
 #include <tut/tut.hpp>
-
-//#include "tests_common.hpp"
 
 #include <QDebug>
 #include <QRegExp>

@@ -8,7 +8,7 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/os.hpp"
+#include <qtaround/os.hpp>
 
 #include <QJsonObject>
 #include <QJsonArray>

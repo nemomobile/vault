@@ -6,10 +6,10 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/subprocess.hpp"
-#include "vault/error.hpp"
-#include "vault/debug.hpp"
-#include "vault/util.hpp"
+#include <qtaround/subprocess.hpp>
+#include <qtaround/error.hpp>
+#include <qtaround/debug.hpp>
+#include <qtaround/util.hpp>
 
 namespace subprocess {
 

@@ -1,21 +1,20 @@
-
-Summary: Set of tools to perform backup/restoration of the data.
+Summary: Incremental backup/restore framework
 Name: vault
 Version: 0.1.0
 Release: 1
 License: LGPL21
 Group: Development/Liraries
-URL: https://git.jollamobile.com/vault/vault
+URL: https://github.com/nemomobile/vault
 Source0: %{name}-%{version}.tar.bz2
 BuildRequires: cmake >= 2.8
-BuildRequires: cor-devel
-BuildRequires: gittin-devel
-BuildRequires: tut
+BuildRequires: pkgconfig(cor)
+BuildRequires: pkgconfig(gittin)
+BuildRequires: pkgconfig(tut)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 %description
-Set of tools to perform backup/restoration of the data.
+Incremental backup/restore framework
 
 %package devel
 Summary: vault headers etc.
@@ -40,7 +39,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libcutespp.so*
+%{_libdir}/libqtaround.so*
 %{_libdir}/libvault-core.so*
 %{_libdir}/libvault-transfer.so*
 %{_libdir}/libvault-unit.so*
@@ -51,7 +50,9 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %{_libdir}/pkgconfig/*.pc
 %dir %{_includedir}/vault
+%dir %{_includedir}/qtaround
 %{_includedir}/vault/*.hpp
+%{_includedir}/qtaround/*.hpp
 
 
 %post -p /sbin/ldconfig

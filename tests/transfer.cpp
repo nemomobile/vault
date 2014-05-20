@@ -2,11 +2,12 @@
 #include "vault_context.hpp"
 #include "tests_common.hpp"
 
-#include <vault/debug.hpp>
-#include <vault/util.hpp>
-#include <vault/sys.hpp>
-#include <vault/os.hpp>
-#include <vault/subprocess.hpp>
+#include <qtaround/debug.hpp>
+#include <qtaround/util.hpp>
+#include <qtaround/sys.hpp>
+#include <qtaround/os.hpp>
+#include <qtaround/subprocess.hpp>
+
 #include <vault/config.hpp>
 #include <vault/vault.hpp>
 

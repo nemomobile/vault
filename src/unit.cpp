@@ -8,10 +8,10 @@
 
 #include <vault/unit.hpp>
 
-#include "vault/util.hpp"
-#include "vault/os.hpp"
-#include "json.hpp"
-#include "vault/debug.hpp"
+#include <qtaround/util.hpp>
+#include <qtaround/os.hpp>
+#include <qtaround/json.hpp>
+#include <qtaround/debug.hpp>
 
 #include <QString>
 

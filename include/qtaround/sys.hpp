@@ -8,7 +8,7 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/util.hpp"
+#include <qtaround/util.hpp>
 
 #include <QSet>
 

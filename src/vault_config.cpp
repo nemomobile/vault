@@ -13,10 +13,10 @@
 #include <gittin/commit.hpp>
 
 #include <vault/config.hpp>
-#include "vault/error.hpp"
-#include "vault/os.hpp"
-#include "vault/debug.hpp"
-#include "json.hpp"
+#include <qtaround/error.hpp>
+#include <qtaround/os.hpp>
+#include <qtaround/debug.hpp>
+#include <qtaround/json.hpp>
 
 namespace vault { namespace config {
 

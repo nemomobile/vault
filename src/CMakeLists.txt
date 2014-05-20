@@ -10,18 +10,18 @@ link_directories(
 
 set(CMAKE_AUTOMOC TRUE)
 
-add_library(cutespp SHARED debug.cpp os.cpp json.cpp sys.cpp subprocess.cpp util.cpp)
-qt5_use_modules(cutespp Core)
-target_link_libraries(cutespp ${COR_LIBRARIES})
-set_target_properties(cutespp PROPERTIES
+add_library(qtaround SHARED debug.cpp os.cpp json.cpp sys.cpp subprocess.cpp util.cpp)
+qt5_use_modules(qtaround Core)
+target_link_libraries(qtaround ${COR_LIBRARIES})
+set_target_properties(qtaround PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
   )
-install(TARGETS cutespp DESTINATION ${DST_LIB})
+install(TARGETS qtaround DESTINATION ${DST_LIB})
 
 add_library(vault-core SHARED vault.cpp vault_config.cpp)
 qt5_use_modules(vault-core Core)
-target_link_libraries(vault-core cutespp ${GITTIN_LIBRARIES})
+target_link_libraries(vault-core qtaround ${GITTIN_LIBRARIES})
 set_target_properties(vault-core PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
@@ -34,7 +34,7 @@ install(TARGETS vault-cli DESTINATION bin RENAME vault)
 
 add_library(vault-unit SHARED unit.cpp)
 qt5_use_modules(vault-unit Core)
-target_link_libraries(vault-unit ${COR_LIBRARIES} cutespp)
+target_link_libraries(vault-unit ${COR_LIBRARIES} qtaround)
 set_target_properties(vault-unit PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
@@ -43,7 +43,7 @@ install(TARGETS vault-unit DESTINATION ${DST_LIB})
 
 add_library(vault-transfer SHARED transfer.cpp)
 qt5_use_modules(vault-transfer Core)
-target_link_libraries(vault-transfer ${COR_LIBRARIES} cutespp vault-core)
+target_link_libraries(vault-transfer ${COR_LIBRARIES} qtaround vault-core)
 set_target_properties(vault-transfer PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}

@@ -1,11 +1,11 @@
 
 #include <vault/unit.hpp>
 
-#include "vault/os.hpp"
-#include "vault/subprocess.hpp"
-#include "vault/error.hpp"
-#include "vault/util.hpp"
-#include "vault/debug.hpp"
+#include <qtaround/os.hpp>
+#include <qtaround/subprocess.hpp>
+#include <qtaround/error.hpp>
+#include <qtaround/util.hpp>
+#include <qtaround/debug.hpp>
 
 #include <QCoreApplication>
 #include <sys/types.h>

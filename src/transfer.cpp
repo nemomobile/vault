@@ -8,10 +8,10 @@
 
 #include "transfer.hpp"
 
-#include "vault/os.hpp"
-#include "vault/subprocess.hpp"
-#include "vault/debug.hpp"
-#include "vault/error.hpp"
+#include <qtaround/os.hpp>
+#include <qtaround/subprocess.hpp>
+#include <qtaround/debug.hpp>
+#include <qtaround/error.hpp>
 #include <vault/vault.hpp>
 
 #include "QString"

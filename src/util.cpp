@@ -6,8 +6,8 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/util.hpp"
-#include "vault/debug.hpp"
+#include <qtaround/util.hpp>
+#include <qtaround/debug.hpp>
 
 #include <QString>
 #include <QMap>

@@ -1,8 +1,9 @@
-#include "vault/debug.hpp"
-#include "vault/util.hpp"
-#include "vault/os.hpp"
-#include "vault/subprocess.hpp"
-#include "json.hpp"
+#include <qtaround/debug.hpp>
+#include <qtaround/util.hpp>
+#include <qtaround/os.hpp>
+#include <qtaround/subprocess.hpp>
+#include <qtaround/json.hpp>
+
 #include <QCoreApplication>
 #include <QDebug>
 

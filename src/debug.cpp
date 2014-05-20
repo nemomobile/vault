@@ -6,7 +6,7 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
-#include "vault/debug.hpp"
+#include <qtaround/debug.hpp>
 #include <mutex>
 #include <string>
 #include <iostream>
