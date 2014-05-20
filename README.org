@@ -1,6 +1,7 @@
-* the-vault
+* vault
 
-Set of tools to perform backup/restoration of the data.
+Set of tools to perform backup/restoration of the data. This is the
+rewrite of [[https://github.com/nemomobile/the-vault][the-vault]] in C++.
 
 It uses git for data and metadata management. Binaries are stored
 separately now inside .git repository. Some ideas are borrowed from
