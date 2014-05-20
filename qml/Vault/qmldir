@@ -1,2 +1,2 @@
-module Vault
+module NemoMobile.Vault
 plugin vault-declarative

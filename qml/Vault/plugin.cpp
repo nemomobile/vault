@@ -15,7 +15,7 @@ class VaultPlugin : public QQmlExtensionPlugin
 public:
     virtual void registerTypes(const char *uri)
     {
-        Q_ASSERT(QLatin1String(uri) == QLatin1String("Vault"));
+        Q_ASSERT(QLatin1String(uri) == QLatin1String("NemoMobile.Vault"));
         qmlRegisterType<Vault>(uri, 1, 0, "Vault");
     }
 
