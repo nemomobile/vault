@@ -9,7 +9,6 @@
  */
 
 #include "error.hpp"
-#include <cor/util.hpp>
 
 #include <QVariant>
 #include <QDebug>
@@ -125,7 +124,6 @@ template <typename T>
 std::unique_ptr<T> box(T &&v)
 {
     std::unique_ptr<T> p(new T(std::move(v)));
-    //return cor::make_unique<T>();
     return p;
 }
 

@@ -11,6 +11,7 @@
 #include <vault/config.hpp>
 #include <vault/vault.hpp>
 
+#include <cor/util.hpp>
 #include <tut/tut.hpp>
 
 //#include "tests_common.hpp"

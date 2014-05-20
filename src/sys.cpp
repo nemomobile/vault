@@ -8,6 +8,8 @@
 
 #include <qtaround/sys.hpp>
 
+#include <cor/util.hpp>
+
 #include <QStringList>
 #include <QCoreApplication>
 #include <QCommandLineParser>

@@ -58,8 +58,6 @@ const QString vault_dir = os::path::join(home, ".vault");
 const QString global_mod_dir = os::path::join(home, ".units");
 vault::Vault vlt(vault_dir);
 
-typedef cor::ScopeExit<std::function<void ()> > teardown_type;
-
 std::function<void ()> setup()
 {
     if (os::path::exists(home)) {
