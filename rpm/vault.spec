@@ -12,6 +12,8 @@ BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
+Provides: the-vault
+Obsoletes: the-vault
 
 %description
 Incremental backup/restore framework
