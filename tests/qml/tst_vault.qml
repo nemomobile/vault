@@ -1,7 +1,7 @@
 
 import QtTest 1.0
 import QtQuick 2.0
-import Vault 1.0
+import NemoMobile.Vault 1.0
 
 Item {
     width: 200
