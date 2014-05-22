@@ -12,7 +12,6 @@
 
 #include <QStringList>
 #include <QCoreApplication>
-#include <QCommandLineParser>
 
 namespace sys {
 QStringList command_line_options(QVariantMap const &options
@@ -56,59 +55,140 @@ public:
     OptionsImpl()
     {}
 
+    void addOption(const QString &shortName, const QString &longName,
+                   const QString &description, const QString &defaultValue)
+    {
+        QStringList names = { QString("-") + shortName, QString("--") + longName };
+        options_ << Option(true, names, description, defaultValue);
+        Option *opt = &options_.last();
+        for (const QString &name: names) {
+            optionsMap_.insert(name, opt);
+        }
+        optionsMap_.insert(description, opt);
+    }
+    void addOption(const QString &shortName, const QString &longName,
+                   const QString &description)
+    {
+        QStringList names = { QString("-") + shortName, QString("--") + longName };
+        options_ << Option(false, names, description);
+        Option *opt = &options_.last();
+        for (const QString &name: names) {
+            optionsMap_.insert(name, opt);
+        }
+        optionsMap_.insert(description, opt);
+    }
+
+    void process()
+    {
+        QStringList args = QCoreApplication::arguments();
+        for (int i = 1; i < args.count(); ++i) {
+            QString arg = args.at(i);
+            bool hasEqual = arg.contains("=");
+            if (hasEqual) {
+                arg = arg.split("=").first();
+            }
+            for (Option &opt: options_) {
+                if (!opt.names.contains(arg)) {
+                    continue;
+                }
+
+                if (!opt.hasParam) {
+                    opt.set = true;
+                    break;
+                }
+
+                bool valid = true;
+                QString param;
+                if (hasEqual) {
+                    param = args.at(i).mid(arg.size() + 1);
+                } else {
+                    if (i == args.count() - 1) {
+                        break;
+                    }
+                    param = args.at(i + 1);
+                    for (Option &o: options_) {
+                        if (o.names.contains(param)) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                }
+                opt.set = true;
+                opt.value = valid ? param : opt.defaultValue;
+            }
+        }
+    }
+
     virtual QString value(QString const &name) const
     {
-        return parser_.value(name);
+        Option *opt = optionsMap_.value(name);
+        return opt ? opt->value : QString();
     }
 
     virtual bool isSet(QString const &name) const
     {
-        return parser_.isSet(name);
+        Option *opt = optionsMap_.value(name);
+        return opt ? opt->set : false;
     }
 
     virtual QStringList arguments() const
     {
-        return parser_.positionalArguments();
+        return QStringList();
     }
 
 private:
     friend std::unique_ptr<GetOpt> getopt(QVariantMap const &);
 
-    QCommandLineParser parser_;
+    struct Option {
+        Option(bool hp, const QStringList &n, const QString &d, const QString &dv = QString())
+            : hasParam(hp)
+            , names(n)
+            , description(d)
+            , defaultValue(dv)
+            , set(false)
+        {
+        }
+
+        bool hasParam;
+        QStringList names;
+        QString description;
+        QString defaultValue;
+
+        QString value;
+        bool set;
+    };
+
+    QList<Option> options_;
+    QMap<QString, Option *> optionsMap_;
 };
 
-std::unique_ptr<GetOpt> getopt(QVariantMap const &info)
+std::unique_ptr<GetOpt> getopt(QVariantMap const &info, bool requireAll)
 {
     auto res = cor::make_unique<OptionsImpl>();
-    QCommandLineParser &parser = res->parser_;
-    parser.setApplicationDescription("Vault unit");
-    parser.addHelpOption();
 
-    auto add_option = [](QCommandLineParser &parser
+    auto add_option = [](OptionsImpl &parser
                     , QString const &name
                     , QVariant const &v) {
         auto info = v.toMap();
         if (info["has_param"].toBool()) {
-            QCommandLineOption o(QStringList() << str(info["short"])
-                                 << str(info["long"])
-                                 , name, name);
-            parser.addOption(o);
+           parser.addOption(str(info["short"]), str(info["long"]), name, name);
         } else {
-            QCommandLineOption o(QStringList() << str(info["short"])
-                                 << str(info["long"]), name);
-            parser.addOption(o);
+            parser.addOption(str(info["short"]), str(info["long"]), name);
         }
     };
     for (auto it = info.begin(); it != info.end(); ++it) {
-        add_option(parser, it.key(), it.value());
+        add_option(*res, it.key(), it.value());
     }
-    parser.process(*QCoreApplication::instance());
-    for (auto it = info.begin(); it != info.end(); ++it) {
-        auto name = it.key();
-        if (!parser.isSet(name))
-            error::raise({{"msg", "Required option is not set"}
-                    , {"option", name}});
+    res->process();
+    if (requireAll) {
+        for (auto it = info.begin(); it != info.end(); ++it) {
+            auto name = it.key();
+            if (!res->isSet(name))
+                error::raise({{"msg", "Required option is not set"}
+                        , {"option", name}});
+        }
     }
+
     return std::move(res);
 }
 
