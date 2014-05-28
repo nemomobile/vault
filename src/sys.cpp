@@ -1,7 +1,7 @@
 /**
  * @file sys.cpp
  * @brief Command line parsing and generation etc.
- * @author Denis Zalevskiy <denis.zalevskiy@jolla.com>
+ * @author Giulio Camuffo <giulio.camuffo@jollamobile.com>, Denis Zalevskiy <denis.zalevskiy@jolla.com>
  * @copyright (C) 2014 Jolla Ltd.
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
@@ -59,23 +59,18 @@ public:
                    const QString &description, const QString &defaultValue)
     {
         QStringList names = { QString("-") + shortName, QString("--") + longName };
-        options_ << Option(true, names, description, defaultValue);
-        Option *opt = &options_.last();
-        for (const QString &name: names) {
-            optionsMap_.insert(name, opt);
-        }
-        optionsMap_.insert(description, opt);
+        auto opt = std::make_shared<Option>(true, names, description, defaultValue);
+        names.push_back(description);
+        addOption(names, opt);
     }
+
     void addOption(const QString &shortName, const QString &longName,
                    const QString &description)
     {
         QStringList names = { QString("-") + shortName, QString("--") + longName };
-        options_ << Option(false, names, description);
-        Option *opt = &options_.last();
-        for (const QString &name: names) {
-            optionsMap_.insert(name, opt);
-        }
-        optionsMap_.insert(description, opt);
+        auto opt = std::make_shared<Option>(false, names, description);
+        names.push_back(description);
+        addOption(names, opt);
     }
 
     void process()
@@ -87,13 +82,13 @@ public:
             if (hasEqual) {
                 arg = arg.split("=").first();
             }
-            for (Option &opt: options_) {
-                if (!opt.names.contains(arg)) {
+            for (auto opt: options_) {
+                if (!opt->names.contains(arg)) {
                     continue;
                 }
 
-                if (!opt.hasParam) {
-                    opt.set = true;
+                if (!opt->hasParam) {
+                    opt->set = true;
                     break;
                 }
 
@@ -106,28 +101,28 @@ public:
                         break;
                     }
                     param = args.at(i + 1);
-                    for (Option &o: options_) {
-                        if (o.names.contains(param)) {
+                    for (auto o: options_) {
+                        if (o->names.contains(param)) {
                             valid = false;
                             break;
                         }
                     }
                 }
-                opt.set = true;
-                opt.value = valid ? param : opt.defaultValue;
+                opt->set = true;
+                opt->value = valid ? param : opt->defaultValue;
             }
         }
     }
 
     virtual QString value(QString const &name) const
     {
-        Option *opt = optionsMap_.value(name);
+        auto opt = optionsMap_.value(name);
         return opt ? opt->value : QString();
     }
 
     virtual bool isSet(QString const &name) const
     {
-        Option *opt = optionsMap_.value(name);
+        auto opt = optionsMap_.value(name);
         return opt ? opt->set : false;
     }
 
@@ -158,8 +153,16 @@ private:
         bool set;
     };
 
-    QList<Option> options_;
-    QMap<QString, Option *> optionsMap_;
+    void addOption(QStringList const &names, std::shared_ptr<Option> const &opt)
+    {
+        options_.push_back(opt);
+        for (auto const &name: names) {
+            optionsMap_.insert(name, opt);
+        }
+    }
+
+    QList<std::shared_ptr<Option> > options_;
+    QMap<QString, std::shared_ptr<Option> > optionsMap_;
 };
 
 std::unique_ptr<GetOpt> getopt(QVariantMap const &info, bool requireAll)
