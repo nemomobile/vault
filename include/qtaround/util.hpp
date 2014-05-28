@@ -14,6 +14,7 @@
 #include <QDebug>
 #include <QTextStream>
 #include <QMap>
+#include <QStringList>
 
 #include <tuple>
 #include <memory>
@@ -109,6 +110,12 @@ QVariant get(QVariantMap const &m, QString const &k1)
 inline QStringList filterEmpty(QStringList const &src)
 {
     return src.filter(QRegExp("^.+$"));
+}
+
+template<>
+QString get(QVariant const &from)
+{
+    return from.toString();
 }
 
 }
@@ -289,7 +296,7 @@ QList<std::tuple<X, Y> > zip(QList<X> const &x, QList<Y> const &y)
 template <typename ResKeyT, typename T, typename K>
 QMap<ResKeyT, T> mapByField(QList<T> const &src, K const &key)
 {
-    auto fn = [&key](T const &v) { return std::make_tuple(ResKeyT(v[key]), v); };
+    auto fn = [&key](T const &v) { return std::make_tuple(get<ResKeyT>(v[key]), v); };
     auto pairs = map<std::tuple<ResKeyT, T> >(fn, src);
     return ::map(pairs);
 }

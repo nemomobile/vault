@@ -29,7 +29,7 @@ public:
     virtual QStringList arguments() const =0;
 };
 
-std::unique_ptr<GetOpt> getopt(QVariantMap const &);
+std::unique_ptr<GetOpt> getopt(QVariantMap const &, bool requireAll = true);
 
 }
 

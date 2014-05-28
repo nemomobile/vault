@@ -295,7 +295,7 @@ double diskFree(QString const &path)
     auto mount_point = s["mount_point"];
     if (mount_point == "?")
         mount_point = mountpoint(path);
-    auto mounts = util::mapByField<QVariant>(mount(), "dst");
+    auto mounts = util::mapByField<QString>(mount(), "dst");
     auto info = mounts[mount_point];
     if (info.empty())
         error::raise({{"msg", "Can't find mount point"}
