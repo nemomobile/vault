@@ -23,21 +23,21 @@ Incremental backup/restore framework
 
 %package devel
 Summary: vault headers etc.
-Group: System Environment/Libraries
+Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 %description devel
 vault library header files etc.
 
 %package -n qtaround
 Summary: QtAround library
-Group: System Environment/Libraries
+Group: Development/Libraries
 %description -n qtaround
 QtAround library used to port the-vault to C++. Mostly consists of
 thin wrappers around Qt classes and standard Linux utilities.
 
 %package -n qtaround-devel
 Summary: QtAround library
-Group: System Environment/Libraries
+Group: Development/Libraries
 Requires: qtaround = %{version}-%{release}
 %description -n qtaround-devel
 QtAround library used to port the-vault to C++. Mostly consists of
