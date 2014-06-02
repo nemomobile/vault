@@ -82,5 +82,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_includedir}/qtaround/*.hpp
 
 %post -p /sbin/ldconfig
-
 %postun -p /sbin/ldconfig
+
+%post -n qtaround -p /sbin/ldconfig
+%postun -n qtaround -p /sbin/ldconfig
