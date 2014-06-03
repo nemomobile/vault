@@ -14,9 +14,6 @@ BuildRequires: pkgconfig(Qt5Core)
 BuildRequires: pkgconfig(Qt5Qml)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-# last known available version was 0.8.17.1
-Provides: the-vault = 0.8.19
-Obsoletes: the-vault <= 0.8.18
 
 %description
 Incremental backup/restore framework
