@@ -57,7 +57,7 @@ signals:
     void rootChanged();
     void backupHomeChanged();
 
-    void done(Operation operation);
+    void done(Operation operation, const QVariantMap &data);
     void progress(Operation operation, const QVariantMap &data);
     void error(Operation operation, const QString &error);
 

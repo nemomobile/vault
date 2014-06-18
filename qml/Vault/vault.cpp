@@ -58,7 +58,7 @@ public:
         m_vault->restore(snapshot, home, units, [this](const QString unit, const QString &status) {
             emit progress(Vault::Restore, {{"unit", unit}, {"status", status}});
         });
-        emit done(Vault::Restore);
+        emit done(Vault::Restore, QVariantMap());
     }
 
     Q_INVOKABLE void backup(const QString &home, const QStringList &units, const QString &message)
@@ -67,7 +67,7 @@ public:
         m_vault->backup(home, units, message, [this](const QString unit, const QString &status) {
             emit progress(Vault::Backup, {{"unit", unit}, {"status", status}});
         });
-        emit done(Vault::Backup);
+        emit done(Vault::Backup, QVariantMap());
     }
 
     QStringList snapshots() const
@@ -94,7 +94,10 @@ public:
         try {
             CardTransfer::Action ac = action == Vault::Import ? CardTransfer::Import : CardTransfer::Export;
             m_transfer->init(m_vault, ac, path);
-            emit done(Vault::ExportImportPrepare);
+            QVariantMap data;
+            data["action"] = action ==Vault:: Import ? "import" : "export";
+            data["src"] = m_transfer->getSrc();
+            emit done(Vault::ExportImportPrepare, data);
         } catch (error::Error e) {
             emit error(Vault::ExportImportPrepare, e.what());
         }
@@ -110,7 +113,7 @@ public:
             m_transfer->execute([this](QVariantMap &&map) {
                 emit progress(Vault::ExportImportExecute, map);
             });
-            emit done(Vault::ExportImportExecute);
+            emit done(Vault::ExportImportExecute, QVariantMap());
         } catch (error::Error e) {
             emit error(Vault::ExportImportExecute, e.what());
         }
@@ -141,13 +144,13 @@ public:
         } else {
             debug::debug("There are some snapshots, continue");
         }
-        emit done(Vault::RemoveSnapshot);
+        emit done(Vault::RemoveSnapshot, QVariantMap());
     }
 
 signals:
     void progress(Vault::Operation op, const QVariantMap &map);
     void error(Vault::Operation op, const QString &error);
-    void done(Vault::Operation op);
+    void done(Vault::Operation op, const QVariantMap &);
 
 public:
     vault::Vault *m_vault;
@@ -212,7 +215,7 @@ void Vault::initWorker(bool reload)
     }
     try {
         m_worker->init(m_root);
-        emit done(Vault::Connect);
+        emit done(Vault::Connect, QVariantMap());
     } catch (error::Error e) {
         emit error(Vault::Connect, e.what());
     }
@@ -221,7 +224,7 @@ void Vault::initWorker(bool reload)
 void Vault::connectVault(bool reconnect)
 {
     if (m_worker && !reconnect) {
-        emit done(Vault::Connect);
+        emit done(Vault::Connect, QVariantMap());
         return;
     }
 
@@ -232,7 +235,7 @@ void Vault::startRestore(const QString &snapshot, const QStringList &units)
 {
     if (units.isEmpty()) {
         debug::info("Nothing to restore");
-        emit done(Vault::Restore);
+        emit done(Vault::Restore, QVariantMap());
         return;
     }
 
@@ -243,7 +246,7 @@ void Vault::startBackup(const QString &message, const QStringList &units)
 {
     if (units.isEmpty()) {
         debug::info("Nothing to backup");
-        emit done(Vault::Backup);
+        emit done(Vault::Backup, QVariantMap());
         return;
     }
 
