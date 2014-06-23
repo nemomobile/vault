@@ -84,6 +84,13 @@ private:
     void tagSnapshot(const QString &msg);
     void resetMaster();
 
+    void init_(const QVariantMap &config);
+
+    QString readFile(const QString &relPath);
+
+    void setVersion(File, int);
+    int getVersion(File);
+
     const QString m_path;
     const QString m_blobStorage;
     Gittin::Repo m_vcs;
@@ -93,4 +100,3 @@ private:
 }
 
 #endif // _VAULT_VAULT_HPP_
-
