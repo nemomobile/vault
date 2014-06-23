@@ -187,7 +187,7 @@ QString Config::root() const
 
 
 Vault::Vault(Gittin::Repo *vcs)
-     : m_config(QDir(vcs->path() + "/.modules").absolutePath())
+    : m_config(os::path::canonical(units_path(vcs->path())))
      , m_vcs(vcs)
 {
 
@@ -199,33 +199,13 @@ Vault::~Vault()
 
 bool Vault::set(const QVariantMap &data)
 {
-    if (!m_config.set(data)) {
-        return false;
-    }
-
-    m_vcs->add(m_config.root(), Gittin::AddOptions::All);
-    Gittin::RepoStatus status = m_vcs->status(m_config.root());
-    if (!status.isClean()) {
-        m_vcs->commit("+" + data.value("name").toString());
-    }
-    return true;
+    return m_config.set(data);
 }
 
 bool Vault::rm(const QString &name)
 {
-    QString fname = m_config.rm(name);
-    if (fname.isEmpty()) {
-        return false;
-    }
-
-    fname = m_config.root() + "/" + fname;
-    m_vcs->add(fname, Gittin::AddOptions::Update);
-    Gittin::RepoStatus status = m_vcs->status(m_config.root());
-    if (status.isClean()) {
-        error::raise({{"msg", "Logic error, can't rm vcs path"}, {"path", fname}});
-    }
-    m_vcs->commit("-" + name);
-    return true;
+    auto fname = m_config.rm(name);
+    return !fname.isEmpty();
 }
 
 bool Vault::update(const QMap<QString, Unit> &src)
