@@ -9,9 +9,11 @@
 #include "vault.hpp"
 
 Q_DECLARE_METATYPE(Vault::Operation)
-static const int _vault_operation_ = qRegisterMetaType<Vault::Operation>();
+static const int _vault_operation_ __attribute__((unused))
+= qRegisterMetaType<Vault::Operation>();
 Q_DECLARE_METATYPE(Vault::ImportExportAction)
-static const int _vault_importexportaction_ = qRegisterMetaType<Vault::ImportExportAction>();
+static const int _vault_importexportaction_ __attribute__((unused))
+= qRegisterMetaType<Vault::ImportExportAction>();
 
 class Worker : public QObject
 {
