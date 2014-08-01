@@ -12,6 +12,8 @@
 #include <QMap>
 #include <QVariantMap>
 
+#include <qtaround/os.hpp>
+
 namespace Gittin {
 class Repo;
 }
@@ -21,6 +23,12 @@ namespace vault { namespace config {
 namespace {
 
 const QString prefix = ".f8b52b7481393a3e6ade051ecfb549fa";
+
+static inline QString units_path(QString const &vaultDir)
+{
+    return os::path::join(vaultDir, ".units");
+}
+
 }
 
 class Unit

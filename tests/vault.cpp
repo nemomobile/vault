@@ -144,7 +144,7 @@ void object::test<tid_config_local>()
     auto on_exit = setup();
     vault_init();
     register_unit("unit1", false);
-    QString config_dir = os::path::join(vault_dir, ".modules");
+    QString config_dir = vault::config::units_path(vault_dir);
     vault::config::Config config(config_dir);
     ensure("unit1 config file", os::path::isFile(config.path("unit1")));
     QMap<QString, vault::config::Unit> units = vlt.config().units();

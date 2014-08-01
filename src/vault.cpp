@@ -8,6 +8,7 @@
 
 #include <vault/vault.hpp>
 
+#include <qtaround/util.hpp>
 #include <qtaround/os.hpp>
 #include <qtaround/error.hpp>
 #include <qtaround/debug.hpp>
@@ -182,41 +183,120 @@ void Vault::unregisterUnit(const QString &unit)
     m_config.rm(unit);
 }
 
+void Vault::setVersion(File dst, int ver)
+{
+    auto fname = fileName(dst);
+    if (!writeFile(fname, str(ver)))
+        error::raise({{"msg", "Can't save version"}, {"path", fname}});
+}
+
+QString Vault::readFile(const QString &relPath)
+{
+    return QString::fromUtf8(os::read_file(os::path::join(m_path, relPath)));
+}
+
+int Vault::getVersion(File src)
+{
+    return readFile(fileName(src)).toInt();
+}
+
+void Vault::init_(const QVariantMap &config)
+{
+    auto createRepo = [m_path, &m_vcs]() {
+        if (!os::path::exists(m_path))
+            if (!os::mkdir(m_path))
+                error::raise({{"msg", "Can't create repo dir"}, {"path", m_path}});
+
+        if (!m_vcs.init())
+            error::raise({{"msg", "Can't init git repo"}, {"path", m_path}});
+    };
+
+    auto setupGitConfig = [this, &config]() {
+        m_vcs.setConfigValue("status.showUntrackedFiles", "all");
+        for (auto it = config.begin(); it != config.end(); ++it)
+            m_vcs.setConfigValue(it.key(), it.value().toString());
+    };
+
+    auto excludeServiceFiles = [this]() {
+        auto path = os::path::join(m_path, ".git/info/exclude");
+        if (!writeFile(path, ".vault.*\n.units/"))
+            error::raise({{"msg", "Can't write exclude info"}, {"path", path}});
+    };
+
+    auto initVersions = [this]() {
+        setVersion(File::VersionTree, version::tree);
+        m_vcs.add(fileName(File::VersionTree));
+        m_vcs.commit("anchor");
+        m_vcs.tag("anchor");
+
+        if (!os::path::exists(m_blobStorage))
+            if (!os::mkdir(m_blobStorage))
+                error::raise({{"msg", "Can't create blob storage"},
+                            {"path", m_blobStorage}});
+
+        setVersion(File::VersionRepo, version::repository);
+    };
+
+    auto updateTreeVersion = [this](unsigned current) {
+        debug::info("Updating tree version from", current, "to", version::repository);
+        // since v2 there is no 'latest' tag
+        if (current < 2)
+            snapshot("latest").remove();
+
+        setVersion(File::VersionTree, version::tree);
+        m_vcs.add(fileName(File::VersionTree));
+        m_vcs.commit("vault format version");
+    };
+
+    auto updateRepoVersion = [this, &excludeServiceFiles](unsigned current) {
+        debug::info("Updating repo version from", current, "to", version::tree);
+        if (current < 1) {
+            // state tracking file is appeared in version 1
+            // all .vault.* are also going to be ignored
+            excludeServiceFiles();
+        }
+        setVersion(File::VersionRepo, version::repository);
+    };
+
+    if (!exists()) {
+        if (os::path::exists(m_path))
+            error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
+
+        try {
+            createRepo();
+            setupGitConfig();
+            excludeServiceFiles();
+            initVersions();
+            setState("new");
+        } catch (...) {
+            os::rmtree(m_path);
+            throw;
+        }
+    } else if (!isInvalid()) {
+        auto v = getVersion(File::VersionTree);
+        if (v < version::tree)
+            updateTreeVersion(v);
+
+        v = getVersion(File::VersionRepo);
+        if (v < version::repository)
+            updateRepoVersion(v);
+
+        excludeServiceFiles();
+        setState("new");
+    }
+}
+
 bool Vault::init(const QVariantMap &config)
 {
-    if (!os::path::exists(m_path)) {
-        if (!os::mkdir(m_path)) {
-            return false;
-        }
+    try {
+        init_(config);
+        return true;
+    } catch (std::exception const &e) {
+        debug::error("Error:",  e.what(), ", initializing repository", m_path);
+    } catch (...) {
+        debug::error("Unknown error initializing repository", m_path);
     }
-
-    if (!m_vcs.init()) {
-        return false;
-    }
-
-    m_vcs.setConfigValue("status.showUntrackedFiles", "all");
-    for (auto it = config.begin(); it != config.end(); ++it) {
-        m_vcs.setConfigValue(it.key(), it.value().toString());
-    }
-
-    if (!writeFile(".git/info/exclude", ".vault.*")) {
-        return false;
-    }
-    if (!writeFile(fileName(File::VersionTree), QString::number(version::tree))) {
-        return false;
-    }
-    m_vcs.add(fileName(File::VersionTree));
-    m_vcs.commit("anchor");
-    m_vcs.tag("anchor");
-
-    if (!os::path::exists(m_blobStorage)) {
-        os::mkdir(m_blobStorage);
-    }
-    if (!writeFile(fileName(File::VersionRepo), QString::number(version::repository))) {
-        return false;
-    }
-
-    return setState("new");
+    return false;
 }
 
 bool Vault::ensureValid()

@@ -9,9 +9,11 @@
 #include "vault.hpp"
 
 Q_DECLARE_METATYPE(Vault::Operation)
-static const int _vault_operation_ = qRegisterMetaType<Vault::Operation>();
+static const int _vault_operation_ __attribute__((unused))
+= qRegisterMetaType<Vault::Operation>();
 Q_DECLARE_METATYPE(Vault::ImportExportAction)
-static const int _vault_importexportaction_ = qRegisterMetaType<Vault::ImportExportAction>();
+static const int _vault_importexportaction_ __attribute__((unused))
+= qRegisterMetaType<Vault::ImportExportAction>();
 
 class Worker : public QObject
 {
@@ -34,14 +36,8 @@ public:
     {
         m_vault = new vault::Vault(root);
         QVariantMap options = {{ "user.name", "Some Sailor"}, {"user.email", "sailor@jolla.com"}};
-        if (!m_vault->exists()) {
-            if (!m_vault->init(options)) {
-                error::raise({{"msg", "vault is invalid"}});
-            }
-        } else {
-            if (m_vault->isInvalid()) {
-                error::raise({{"msg", "vault is invalid"}});
-            }
+        if (!m_vault->init(options)) {
+            error::raise({{"msg", "Can't init vault"}, {"path", root}});
         }
         syncConfig();
     }
