@@ -61,6 +61,7 @@ public:
 
     QList<Snapshot> snapshots() const;
     Snapshot snapshot(const QByteArray &tag) const;
+    QString notes(const QString &snapshotName);
 
     bool exists() const;
     bool isInvalid();

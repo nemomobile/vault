@@ -150,7 +150,8 @@ void Vault::execute(const QVariantMap &options)
         }
         vault.restore(vault.snapshot(options.value("tag").toByteArray()), options.value("home").toString(), units);
     } else if (action == "list-snapshots") {
-        for (const Snapshot &s: vault.snapshots()) {
+        auto snapshots = vault.snapshots();
+        for (const Snapshot &s: snapshots) {
             qDebug() << s.tag().name();
         }
     } else if (action == "register") {
@@ -453,8 +454,9 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
 
 QList<Snapshot> Vault::snapshots() const
 {
+    auto tags = m_vcs.tags();
     QList<Snapshot> list;
-    for (const Gittin::Tag &tag: m_vcs.tags()) {
+    for (const Gittin::Tag &tag: tags) {
         if (!tag.name().isEmpty() && tag.name().startsWith('>')) {
             list << Snapshot(tag);
         }
@@ -464,13 +466,20 @@ QList<Snapshot> Vault::snapshots() const
 
 Snapshot Vault::snapshot(const QByteArray &tagName) const
 {
-    for (const Gittin::Tag &tag: m_vcs.tags()) {
+    auto tags = m_vcs.tags();
+    for (const Gittin::Tag &tag: tags) {
         if (tag.name() == tagName) {
             return Snapshot(tag);
         }
     }
     error::raise({{"msg", "Wrong snapshot tag"}, {"tag", tagName}});
     return Snapshot(m_vcs.tags().first());
+}
+
+QString Vault::notes(const QString &snapshot)
+{
+    Gittin::Tag tag(&m_vcs, snapshot);
+    return tag.notes();
 }
 
 bool Vault::exists() const
