@@ -187,7 +187,7 @@ QString Config::root() const
 
 
 Vault::Vault(Gittin::Repo *vcs)
-    : m_config(os::path::canonical(units_path(vcs->path())))
+    : m_config(units_path(vcs->path()))
      , m_vcs(vcs)
 {
 
