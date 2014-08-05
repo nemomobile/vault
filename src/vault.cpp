@@ -219,7 +219,7 @@ void Vault::init_(const QVariantMap &config)
     };
 
     auto excludeServiceFiles = [this]() {
-        auto path = os::path::join(m_path, ".git/info/exclude");
+        auto path = ".git/info/exclude";
         if (!writeFile(path, ".vault.*\n.units/"))
             error::raise({{"msg", "Can't write exclude info"}, {"path", path}});
     };
