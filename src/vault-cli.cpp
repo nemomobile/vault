@@ -7,12 +7,12 @@
  */
 
 #include <QCoreApplication>
+#include <QCommandLineParser>
 #include <QDebug>
 
 #include <vault/vault.hpp>
-#include <qtaround/sys.hpp>
 
-void set(QVariantMap &map, const sys::GetOpt &parser, const QString &option, bool optional = false)
+void set(QVariantMap &map, const QCommandLineParser &parser, const QString &option, bool optional = false)
 {
     if (!optional || parser.isSet(option)) {
         map.insert(option, parser.value(option));
@@ -23,33 +23,35 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
 
-    auto cmdline = sys::getopt({
-        { "vault", QVariantMap{ {"short", "V"}, {"long", "vault"}, {"has_param", true} }},
-        { "global", QVariantMap{ {"short", "G"}, {"long", "global"} }},
-        { "action", QVariantMap{ {"short", "a"}, {"long", "action"}, {"has_param", true}, {"required", true} }},
-        { "home", QVariantMap{ {"short", "H"}, {"long", "home"}, {"has_param", true} }},
-        { "git-config", QVariantMap{ {"short", "g"}, {"long", "git-config"}, {"has_param", true} }},
-        { "config-path", QVariantMap{ {"short", "c"}, {"long", "config-path"},
-                           {"has_param", true}, {"default", "/etc/the-vault.json"} }},
-        { "message", QVariantMap{ {"short", "m"}, {"long", "message"}, {"has_param", true} }},
-        { "tag", QVariantMap{ {"short", "t"}, {"long", "tag"}, {"has_param", true} }},
-        { "unit", QVariantMap{ {"short", "M"}, {"long", "unit"}, {"has_param", true} }},
-        { "data", QVariantMap{ {"short", "d"}, {"long", "data"}, {"has_param", true} }}
-    }, false);
+    QCommandLineParser parser;
+    parser.setApplicationDescription("The Vault");
+    parser.addHelpOption();
 
+    parser.addOption(QCommandLineOption(QStringList() << "a" << "action", "action", "action"));
+    parser.addOption(QCommandLineOption(QStringList() << "V" << "vault", "vault", "path"));
+    parser.addOption(QCommandLineOption(QStringList() << "H" << "home", "home", "home"));
+    parser.addOption(QCommandLineOption(QStringList() << "G" << "global", "global"));
+    parser.addOption(QCommandLineOption(QStringList() << "d" << "data", "data", "data"));
+    parser.addOption(QCommandLineOption(QStringList() << "M" << "unit", "unit", "unit"));
+    parser.addOption(QCommandLineOption(QStringList() << "c" << "config-path", "config-path", "config-path", "/etc/the-vault.json"));
+    parser.addOption(QCommandLineOption(QStringList() << "g" << "git-config", "git-config", "git-config"));
+    parser.addOption(QCommandLineOption(QStringList() << "m" << "message", "message", "message"));
+    parser.addOption(QCommandLineOption(QStringList() << "t" << "tag", "tag", "tag"));
+
+    parser.process(app);
 
     QVariantMap options;
-    set(options, *cmdline, "action");
-    set(options, *cmdline, "vault", true);
-    set(options, *cmdline, "home", true);
-    set(options, *cmdline, "data", true);
-    set(options, *cmdline, "unit", true);
-    set(options, *cmdline, "config-path", true);
-    set(options, *cmdline, "git-config", true);
-    set(options, *cmdline, "message", true);
-    set(options, *cmdline, "tag", true);
+    set(options, parser, "action");
+    set(options, parser, "vault", true);
+    set(options, parser, "home", true);
+    set(options, parser, "data", true);
+    set(options, parser, "unit", true);
+    set(options, parser, "config-path", true);
+    set(options, parser, "git-config", true);
+    set(options, parser, "message", true);
+    set(options, parser, "tag", true);
 
-    options.insert("global", cmdline->isSet("global"));
+    options.insert("global", parser.isSet("global"));
 
     vault::Vault::execute(options);
 
