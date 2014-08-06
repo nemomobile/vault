@@ -11,6 +11,7 @@
 #include <QDebug>
 
 #include <vault/vault.hpp>
+#include <qtaround/debug.hpp>
 
 void set(QVariantMap &map, const QCommandLineParser &parser, const QString &option, bool optional = false)
 {
@@ -19,10 +20,9 @@ void set(QVariantMap &map, const QCommandLineParser &parser, const QString &opti
     }
 }
 
-int main(int argc, char **argv)
+int main_(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
-
     QCommandLineParser parser;
     parser.setApplicationDescription("The Vault");
     parser.addHelpOption();
@@ -54,6 +54,17 @@ int main(int argc, char **argv)
     options.insert("global", parser.isSet("global"));
 
     vault::Vault::execute(options);
-
     return 0;
+}
+
+int main(int argc, char **argv)
+{
+    try {
+        return main_(argc, argv);
+    } catch (std::exception const &e) {
+        debug::error("Error:",  e.what());
+    } catch (...) {
+        debug::error("Unknown error");
+    }
+    return 1;
 }
