@@ -87,6 +87,7 @@ private:
 
     void init_(const QVariantMap &config);
 
+    QString absolutePath(QString const &);
     QString readFile(const QString &relPath);
 
     void setVersion(File, int);

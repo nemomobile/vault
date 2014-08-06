@@ -201,6 +201,11 @@ int Vault::getVersion(File src)
     return readFile(fileName(src)).toInt();
 }
 
+QString Vault::absolutePath(QString const &relativePath)
+{
+    return os::path::join(m_path, relativePath);
+}
+
 void Vault::init_(const QVariantMap &config)
 {
     auto createRepo = [m_path, &m_vcs]() {
@@ -302,7 +307,7 @@ bool Vault::init(const QVariantMap &config)
 
 bool Vault::ensureValid()
 {
-    if (!os::path::exists(os::path::join(m_path, ".git"))) {
+    if (!os::path::exists(absolutePath(".git"))) {
         debug::info("Can't find .git", m_path);
         return false;
     }
@@ -311,7 +316,7 @@ bool Vault::ensureValid()
         return false;
     }
 
-    auto versionTreeFile = os::path::join(m_path, fileName(File::VersionTree));
+    auto versionTreeFile = absolutePath(fileName(File::VersionTree));
     if (!os::path::isFile(versionTreeFile)) {
         resetMaster();
         if (!os::path::isFile(versionTreeFile)) {
@@ -489,13 +494,13 @@ bool Vault::exists() const
 
 bool Vault::isInvalid()
 {
-    QString storage(os::path::join(m_path, ".git"));
+    QString storage(absolutePath(".git"));
     QString blob_storage(os::path::join(storage, "blobs"));
     if (!os::path::exists(storage) || !os::path::exists(blob_storage)) {
         return true;
     }
 
-    QString anchor(os::path::join(m_path, fileName(File::VersionTree)));
+    QString anchor(absolutePath(fileName(File::VersionTree)));
     if (!os::path::isFile(anchor)) {
         resetMaster();
         if (!os::path::isFile(anchor))
@@ -506,11 +511,11 @@ bool Vault::isInvalid()
 
 bool Vault::writeFile(const QString &path, const QString &content)
 {
-    QFile file(os::path::join(m_path, path));
+    QFile file(absolutePath(path));
     if (!content.endsWith('\n')) {
-        return os::write_file(os::path::join(m_path, path), content + '\n');
+        return os::write_file(absolutePath(path), content + '\n');
     }
-    return os::write_file(os::path::join(m_path, path), content);
+    return os::write_file(absolutePath(path), content);
 }
 
 bool Vault::setState(const QString &state)
