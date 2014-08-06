@@ -85,8 +85,7 @@ private:
     void tagSnapshot(const QString &msg);
     void resetMaster();
 
-    void init_(const QVariantMap &config);
-
+    void setup(const QVariantMap *config);
     QString absolutePath(QString const &);
     QString readFile(const QString &relPath);
 
