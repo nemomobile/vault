@@ -276,6 +276,11 @@ void Vault::setup(const QVariantMap *config)
         setVersion(File::VersionRepo, version::repository);
     };
 
+    auto syncConfigGlobal = [this]() {
+        auto global = vault::config::global();
+        if (global)
+            this->config().update(global->units());
+    };
 
     if (exists() && !isInvalid()) {
         debug::debug("Repository exists and it is not invalid, setup");
@@ -293,6 +298,7 @@ void Vault::setup(const QVariantMap *config)
         if (config)
             setupGitConfig();
 
+        syncConfigGlobal();
     } else {
         debug::info("Repository initialization is requested");
         if (!config)
@@ -306,6 +312,7 @@ void Vault::setup(const QVariantMap *config)
             setupGitConfig();
             excludeServiceFiles();
             initVersions();
+            syncConfigGlobal();
             setState("new");
         } catch (...) {
             os::rmtree(m_path);
