@@ -107,7 +107,9 @@ bool Vault::UnitPath::exists() const
 void Vault::execute(const QVariantMap &options)
 {
     QString action = options.value("action").toString();
+    debug::debug("Action:", action);
     if (options.value("global").toBool()) {
+        debug::debug("Global action");
         if (action == "register") {
             if (!options.contains("data")) {
                 error::raise({{"action", action}, {"msg", "Needs data" }});
@@ -475,6 +477,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
         }
     }
 
+    debug::debug("Restore units:", usedUnits);
     for (const QString &unit: usedUnits) {
         if (restoreUnit(home, unit, progress)) {
             res.failedUnits.removeOne(unit);
