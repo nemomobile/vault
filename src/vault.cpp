@@ -301,10 +301,8 @@ void Vault::setup(const QVariantMap *config)
             setupGitConfig();
 
         syncConfigGlobal();
-    } else {
+    } else if (config) {
         debug::info("Repository initialization is requested");
-        if (!config)
-            error::raise({{"msg", "Config should be passed"}});
 
         if (os::path::exists(m_path))
             error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
