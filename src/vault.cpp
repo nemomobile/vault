@@ -43,7 +43,7 @@ using Gittin::ResetOptions;
 using Gittin::CheckoutOptions;
 
 namespace version {
-    static const int tree = 2;
+    static const int tree = 3;
     static const int repository = 2;
 }
 
@@ -70,6 +70,7 @@ Vault::Vault(const QString &path)
      , m_vcs(path)
      , m_config(&m_vcs)
 {
+    setup(nullptr);
 }
 
 static QVariantMap parseKvPairs(const QString &cfg)
@@ -106,7 +107,9 @@ bool Vault::UnitPath::exists() const
 void Vault::execute(const QVariantMap &options)
 {
     QString action = options.value("action").toString();
+    debug::debug("Action:", action);
     if (options.value("global").toBool()) {
+        debug::debug("Global action");
         if (action == "register") {
             if (!options.contains("data")) {
                 error::raise({{"action", action}, {"msg", "Needs data" }});
@@ -201,9 +204,15 @@ int Vault::getVersion(File src)
     return readFile(fileName(src)).toInt();
 }
 
-void Vault::init_(const QVariantMap &config)
+QString Vault::absolutePath(QString const &relativePath)
+{
+    return os::path::join(m_path, relativePath);
+}
+
+void Vault::setup(const QVariantMap *config)
 {
     auto createRepo = [m_path, &m_vcs]() {
+        debug::debug("Creating repo at", m_path);
         if (!os::path::exists(m_path))
             if (!os::mkdir(m_path))
                 error::raise({{"msg", "Can't create repo dir"}, {"path", m_path}});
@@ -212,9 +221,10 @@ void Vault::init_(const QVariantMap &config)
             error::raise({{"msg", "Can't init git repo"}, {"path", m_path}});
     };
 
-    auto setupGitConfig = [this, &config]() {
+    auto setupGitConfig = [this, config]() {
+        debug::debug("Setup git config", *config);
         m_vcs.setConfigValue("status.showUntrackedFiles", "all");
-        for (auto it = config.begin(); it != config.end(); ++it)
+        for (auto it = config->begin(); it != config->end(); ++it)
             m_vcs.setConfigValue(it.key(), it.value().toString());
     };
 
@@ -225,6 +235,7 @@ void Vault::init_(const QVariantMap &config)
     };
 
     auto initVersions = [this]() {
+        debug::debug("Init vault versions");
         setVersion(File::VersionTree, version::tree);
         m_vcs.add(fileName(File::VersionTree));
         m_vcs.commit("anchor");
@@ -239,10 +250,18 @@ void Vault::init_(const QVariantMap &config)
     };
 
     auto updateTreeVersion = [this](unsigned current) {
-        debug::info("Updating tree version from", current, "to", version::repository);
-        // since v2 there is no 'latest' tag
-        if (current < 2)
+        debug::info("Updating tree version from", current, "to", version::tree);
+
+        if (current < 2) {
+            debug::info("since v2 there is no 'latest' tag");
             snapshot("latest").remove();
+        }
+
+        if (current < 3) {
+            debug::info("Since v3 information about units is not "
+                        "under version control and moved to the .units dir."
+                        "Old .modules is deprecated.");
+        }
 
         setVersion(File::VersionTree, version::tree);
         m_vcs.add(fileName(File::VersionTree));
@@ -250,7 +269,7 @@ void Vault::init_(const QVariantMap &config)
     };
 
     auto updateRepoVersion = [this, &excludeServiceFiles](unsigned current) {
-        debug::info("Updating repo version from", current, "to", version::tree);
+        debug::info("Updating repo version from", current, "to", version::repository);
         if (current < 1) {
             // state tracking file is appeared in version 1
             // all .vault.* are also going to be ignored
@@ -259,21 +278,15 @@ void Vault::init_(const QVariantMap &config)
         setVersion(File::VersionRepo, version::repository);
     };
 
-    if (!exists()) {
-        if (os::path::exists(m_path))
-            error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
+    auto syncConfigGlobal = [this]() {
+        auto global = vault::config::global();
+        if (global)
+            this->config().update(global->units());
+    };
 
-        try {
-            createRepo();
-            setupGitConfig();
-            excludeServiceFiles();
-            initVersions();
-            setState("new");
-        } catch (...) {
-            os::rmtree(m_path);
-            throw;
-        }
-    } else if (!isInvalid()) {
+    if (exists() && !isInvalid()) {
+        debug::debug("Repository exists and it is not invalid, setup");
+
         auto v = getVersion(File::VersionTree);
         if (v < version::tree)
             updateTreeVersion(v);
@@ -284,13 +297,34 @@ void Vault::init_(const QVariantMap &config)
 
         excludeServiceFiles();
         setState("new");
+        if (config)
+            setupGitConfig();
+
+        syncConfigGlobal();
+    } else if (config) {
+        debug::info("Repository initialization is requested");
+
+        if (os::path::exists(m_path))
+            error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
+
+        try {
+            createRepo();
+            setupGitConfig();
+            excludeServiceFiles();
+            initVersions();
+            syncConfigGlobal();
+            setState("new");
+        } catch (...) {
+            os::rmtree(m_path);
+            throw;
+        }
     }
 }
 
 bool Vault::init(const QVariantMap &config)
 {
     try {
-        init_(config);
+        setup(&config);
         return true;
     } catch (std::exception const &e) {
         debug::error("Error:",  e.what(), ", initializing repository", m_path);
@@ -302,7 +336,7 @@ bool Vault::init(const QVariantMap &config)
 
 bool Vault::ensureValid()
 {
-    if (!os::path::exists(os::path::join(m_path, ".git"))) {
+    if (!os::path::exists(absolutePath(".git"))) {
         debug::info("Can't find .git", m_path);
         return false;
     }
@@ -311,7 +345,7 @@ bool Vault::ensureValid()
         return false;
     }
 
-    auto versionTreeFile = os::path::join(m_path, fileName(File::VersionTree));
+    auto versionTreeFile = absolutePath(fileName(File::VersionTree));
     if (!os::path::isFile(versionTreeFile)) {
         resetMaster();
         if (!os::path::isFile(versionTreeFile)) {
@@ -441,6 +475,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
         }
     }
 
+    debug::debug("Restore units:", usedUnits);
     for (const QString &unit: usedUnits) {
         if (restoreUnit(home, unit, progress)) {
             res.failedUnits.removeOne(unit);
@@ -489,13 +524,13 @@ bool Vault::exists() const
 
 bool Vault::isInvalid()
 {
-    QString storage(os::path::join(m_path, ".git"));
+    QString storage(absolutePath(".git"));
     QString blob_storage(os::path::join(storage, "blobs"));
     if (!os::path::exists(storage) || !os::path::exists(blob_storage)) {
         return true;
     }
 
-    QString anchor(os::path::join(m_path, fileName(File::VersionTree)));
+    QString anchor(absolutePath(fileName(File::VersionTree)));
     if (!os::path::isFile(anchor)) {
         resetMaster();
         if (!os::path::isFile(anchor))
@@ -506,11 +541,11 @@ bool Vault::isInvalid()
 
 bool Vault::writeFile(const QString &path, const QString &content)
 {
-    QFile file(os::path::join(m_path, path));
+    QFile file(absolutePath(path));
     if (!content.endsWith('\n')) {
-        return os::write_file(os::path::join(m_path, path), content + '\n');
+        return os::write_file(absolutePath(path), content + '\n');
     }
-    return os::write_file(os::path::join(m_path, path), content);
+    return os::write_file(absolutePath(path), content);
 }
 
 bool Vault::setState(const QString &state)

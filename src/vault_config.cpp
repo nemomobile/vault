@@ -90,7 +90,7 @@ Config::Config(const QString &unitsDir)
       : m_unitsDir(unitsDir)
 {
     if (unitsDir.isEmpty()) {
-        error::raise({{"msg", "Wrong configuration"}, {"cfg", unitsDir}});
+        error::raise({{"msg", "Empty configuration path"}});
     }
 
     load();
