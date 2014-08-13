@@ -10,7 +10,7 @@ BuildRequires: cmake >= 2.8
 BuildRequires: pkgconfig(cor) >= 0.1.14
 BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut) >= 0.0.3
-BuildRequires: pkgconfig(Qt5Core)
+BuildRequires: pkgconfig(Qt5Core) >= 5.2.0
 BuildRequires: pkgconfig(Qt5Qml)
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
