@@ -79,10 +79,39 @@ fi
 
 cmd=$(gen_cmd)
 
+function git_gc {
+    echo "GC"
+    git prune
+    git gc --aggressive
+    echo "PRUNE+"
+    git prune
+}
+
+function rollback {
+    echo "ROLLBACK"
+    git reset --hard
+    git clean -fd
+    git checkout master
+    git branch -D migrate
+    for t in $(git tag | grep '^migrate/'); do
+        git tag -d "$t"
+    done
+    git_gc
+    error "during migration"
+}
+
+export -f rollback
+
 eval "$cmd" || error "$cmd"
+
+echo "REPLACE MASTER"
+# do it separetely to be on the safe side
+(git branch -D master && git branch -m migrate master) || error "replacing master"
+
+echo "CLEAR REFLOG"
 git reflog expire --expire=now --all || error "exiring reflog"
 
-echo "Removing dangling blobs"
+echo "REMOVING DANGLING BLOBS"
 for obj in $(git fsck --unreachable master \
     | grep '^unreachable blob' \
     | sed 's/unreachable blob //'); do
@@ -95,9 +124,5 @@ for obj in $(git fsck --unreachable master \
             || echo "No such blob $blob"
     done
 done
-echo "git prune+gc"
-git prune
-git gc --aggressive
-echo "git prune"
-git prune
+git_gc
 echo "OK"
