@@ -98,16 +98,15 @@ $1 == "start" {
 }
 
 END {
-    for (i = 1; i <= length(move_tags); i++) {
-        push_command(move_tags[i]);
-    }
-    push_command("git branch -D master");
-    push_command("git branch -m migrate master");
-    res = ""
+    res = "(("
     sep = ""
     for (i = 1; i <= length(commands); i++) {
         res = res sep commands[i];
         sep = " && \\\n\t"
+    }
+    res = res ") || rollback)"
+    for (i = 1; i <= length(move_tags); i++) {
+        res = res sep move_tags[i];
     }
     print res;
 }
