@@ -29,7 +29,7 @@ function prepare_commands() {
             push_command("git cherry-pick " ids[1]);
         } else {
             cmd="git cherry-pick " ids[1];
-            for (i = 1; i < length(ids) + 1; i++) {
+            for (i = 1; i <= length(ids); i++) {
                 cmd = cmd " && git cherry-pick --no-commit " ids[i] \
                     " && git commit --no-edit --amend";
             }
@@ -42,7 +42,7 @@ function prepare_commands() {
     id = $2
     tag = $3
     if (length(old_tags) != 0) {
-        for (i = 1; i < length(old_tags) + 1; i++) {
+        for (i = 1; i <= length(old_tags); i++) {
             push_command(old_tags[i]);
         }
         array_clear(old_tags);
@@ -80,15 +80,14 @@ $1 == "start" {
 }
 
 END {
-    for (i = 1; i < length(move_tags) + 1; i++) {
+    for (i = 1; i <= length(move_tags); i++) {
         push_command(move_tags[i]);
     }
     push_command("git branch -D master");
     push_command("git branch -m migrate master");
     res = ""
     sep = " "
-    last = length(commands) + 1;
-    for (i = 1; i != last; i++) {
+    for (i = 1; i <= length(commands); i++) {
         res = res sep commands[i];
         sep = " && "
     }
