@@ -36,7 +36,7 @@ function prepare_commands() {
             cmd="git cherry-pick " ids[1];
             for (i = 1; i <= length(ids); i++) {
                 cmd = cmd " && git cherry-pick --no-commit " ids[i] \
-                    " && git commit --no-edit --amend";
+                    " && git commit --no-edit --amend --allow-empty";
             }
             push_command(cmd);
         }
@@ -53,7 +53,7 @@ function prepare_commands() {
         }
         array_clear(old_tags);
         push_command("git cherry-pick --no-commit " id);
-        push_command("git commit --no-edit --amend");
+        push_command("git commit --no-edit --amend --allow-empty");
     } else {
         push_echo("tag " tag);
         push_command("git cherry-pick " id);
@@ -79,7 +79,7 @@ $1 == "old_tag" {
         push(old_tags, length(old_tags), "git cherry-pick " $2);
     } else {
         push(old_tags, length(old_tags), "git cherry-pick --no-commit " $2);
-        push(old_tags, length(old_tags), "git commit --no-edit --amend");
+        push(old_tags, length(old_tags), "git commit --no-edit --amend --allow-empty");
     }
 }
 
