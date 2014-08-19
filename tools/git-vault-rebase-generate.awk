@@ -22,9 +22,14 @@ function push_command(cmd) {
     push(commands, length(commands), cmd);
 }
 
+function push_echo(message) {
+    push_command("echo 'STEP: " message "'");
+}
+
 function prepare_commands() {
     for (name in commits) {
         split(commits[name], ids, SUBSEP);
+        push_echo("data " name);
         if (length(ids) == 1) {
             push_command("git cherry-pick " ids[1]);
         } else {
@@ -42,6 +47,7 @@ function prepare_commands() {
     id = $2
     tag = $3
     if (length(old_tags) != 0) {
+        push_echo("squash " tag " with " length(old_tags) " old tags");
         for (i = 1; i <= length(old_tags); i++) {
             push_command(old_tags[i]);
         }
@@ -49,6 +55,7 @@ function prepare_commands() {
         push_command("git cherry-pick --no-commit " id);
         push_command("git commit --no-edit --amend");
     } else {
+        push_echo("tag " tag);
         push_command("git cherry-pick " id);
     }
     tmp_tag = "migrate/" tag
@@ -67,6 +74,7 @@ $1 == "add" {
 }
 
 $1 == "old_tag" {
+    push_echo("old_tag " $3);
     if (length(old_tags) == 0) {
         push(old_tags, length(old_tags), "git cherry-pick " $2);
     } else {
@@ -80,6 +88,7 @@ $1 == "tag" {
 }
 
 $1 == "copy" {
+    push_echo("copy " $2);
     push_command("git cherry-pick " $2);
 }
 
