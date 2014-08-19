@@ -1,6 +1,7 @@
 BEGIN {
     FS="$";
     split("", commands);
+    date_tag_re = /^[0-9]+-[0-9]+-[0-9]+T[0-9]+-[0-9]+-.*/;
 }
 
 $2 == "" && substr($3, 1, 1) ~ "[+-]" {
@@ -11,7 +12,11 @@ $2 == "" && substr($3, 1, 1) == ">" {
     print "add", $1, $3;
 }
 
-$3 != "anchor" && $2 != "" {
+$2 != "" && $3 !~ date_tag_re && $3 != "anchor" {
+    print "copy", $1
+}
+
+$2 != "" && $3 ~ date_tag_re {
     split($2, refs, ",");
     is_found=0
     for (i in refs) {
@@ -31,6 +36,6 @@ $3 == "anchor" {
     print "start", $1
 }
 
-$2 == "" && $3 ~ /^[0-9]+-[0-9]+-[0-9]+T[0-9]+-[0-9]+-.*/ {
+$2 == "" && $3 ~ date_tag_re {
     print "old_tag", $1
 }

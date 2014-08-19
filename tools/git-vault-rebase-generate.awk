@@ -79,6 +79,10 @@ $1 == "tag" {
     prepare_commands();
 }
 
+$1 == "copy" {
+    push_command("git cherry-pick " $2);
+}
+
 $1 == "start" {
     push_command("(git checkout master && (git reset --hard && git clean -fd))");
     push_command("git checkout -b migrate " $2);
