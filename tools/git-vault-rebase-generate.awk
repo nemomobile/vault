@@ -95,10 +95,10 @@ END {
     push_command("git branch -D master");
     push_command("git branch -m migrate master");
     res = ""
-    sep = " "
+    sep = ""
     for (i = 1; i <= length(commands); i++) {
         res = res sep commands[i];
-        sep = " && "
+        sep = " && \\\n\t"
     }
     print res;
 }
