@@ -82,6 +82,7 @@ cmd=$(gen_cmd)
 eval "$cmd" || error "$cmd"
 git reflog expire --expire=now --all || error "exiring reflog"
 
+echo "Removing dangling blobs"
 for obj in $(git fsck --unreachable master \
     | grep '^unreachable blob' \
     | sed 's/unreachable blob //'); do
@@ -94,6 +95,9 @@ for obj in $(git fsck --unreachable master \
             || echo "No such blob $blob"
     done
 done
+echo "git prune+gc"
 git prune
 git gc --aggressive
-
+echo "git prune"
+git prune
+echo "OK"
