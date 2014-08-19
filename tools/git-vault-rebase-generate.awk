@@ -67,7 +67,12 @@ $1 == "add" {
 }
 
 $1 == "old_tag" {
-    push(old_tags, length(old_tags), "git cherry-pick " $2);
+    if (length(old_tags) == 0) {
+        push(old_tags, length(old_tags), "git cherry-pick " $2);
+    } else {
+        push(old_tags, length(old_tags), "git cherry-pick --no-commit " $2);
+        push(old_tags, length(old_tags), "git commit --no-edit --amend");
+    }
 }
 
 $1 == "tag" {
