@@ -376,7 +376,6 @@ void Operation::from_vault(QString const &data_type
             if (overwrite) {
                 options["force"] = true;
                 fn = [src, dst, dst_dir, &options]() {
-                    os::rmtree(dst);
                     os::cptree(src, dst_dir, std::move(options));
                 };
             } else {
