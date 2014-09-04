@@ -48,6 +48,8 @@ make install DESTDIR=%{buildroot}
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%define tools_dir %{_libexecdir}/vault
+
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libvault-core.so*
@@ -55,6 +57,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libvault-unit.so*
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
 %{_bindir}/vault
+%{tools_dir}/*
 
 %files devel
 %defattr(-,root,root,-)

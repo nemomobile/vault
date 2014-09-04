@@ -61,6 +61,7 @@ add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
 add_subdirectory(qml/Vault)
+add_subdirectory(tools)
 
 configure_file(vault-unit.pc.in vault-unit.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vault-unit.pc DESTINATION ${DST_LIB}/pkgconfig)
