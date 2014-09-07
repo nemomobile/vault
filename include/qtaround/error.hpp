@@ -40,6 +40,11 @@ static inline void raise(QVariantMap const &m)
     throw Error(m);
 }
 
+static inline void raise(std::initializer_list<std::pair<QString, QVariant> > src)
+{
+    raise(QVariantMap(src));
+}
+
 template <typename T, typename T2, typename ... A>
 void raise(T const &m1, T2 const &m2, A && ...args)
 {

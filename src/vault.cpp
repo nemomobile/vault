@@ -211,7 +211,7 @@ QString Vault::absolutePath(QString const &relativePath)
 
 void Vault::setup(const QVariantMap *config)
 {
-    auto createRepo = [m_path, &m_vcs]() {
+    auto createRepo = [this]() {
         debug::debug("Creating repo at", m_path);
         if (!os::path::exists(m_path))
             if (!os::mkdir(m_path))
