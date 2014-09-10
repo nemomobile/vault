@@ -41,7 +41,12 @@ set(CMAKE_CXX_FLAGS
   "${CMAKE_CXX_FLAGS} -gdwarf-3"
   )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}/qtaround/include
+)
+add_subdirectory(qtaround)
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
@@ -53,7 +58,7 @@ configure_file(qtaround.pc.in qtaround.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtaround.pc DESTINATION ${DST_LIB}/pkgconfig)
 
 install(
-  DIRECTORY include/vault include/qtaround
+  DIRECTORY include/vault
   DESTINATION include
   FILES_MATCHING
   PATTERN "*.hpp"
