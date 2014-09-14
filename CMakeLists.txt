@@ -44,9 +44,19 @@ set(CMAKE_CXX_FLAGS
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/qtaround/include
 )
-add_subdirectory(qtaround)
+
+pkg_check_modules(QTAROUND qtaround REQUIRED)
+pkg_check_modules(COR cor REQUIRED)
+include_directories(
+  ${COR_INCLUDE_DIRS}
+  ${QTAROUND_INCLUDE_DIRS}
+)
+link_directories(
+  ${COR_LIBRARY_DIRS}
+  ${QTAROUND_LIBRARY_DIRS}
+)
+
 add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
@@ -54,8 +64,6 @@ add_subdirectory(qml/Vault)
 
 configure_file(vault-unit.pc.in vault-unit.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vault-unit.pc DESTINATION ${DST_LIB}/pkgconfig)
-configure_file(qtaround.pc.in qtaround.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtaround.pc DESTINATION ${DST_LIB}/pkgconfig)
 
 install(
   DIRECTORY include/vault
