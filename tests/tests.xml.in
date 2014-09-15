@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testdefinition version="1.0">
+   <suite name="qtaround-tests" domain="system">
+       <description>QtAround automatic tests</description>
+       <set name="unit-tests" feature="qtaround tests">
+           <description>Testing qtaround</description>
+           <case manual="false" name="unittests">
+               <step>cd @TESTS_DIR@ &amp;&amp; find -type f -name 'test_*' -exec {} \;</step>
+           </case>
+       </set>
+   </suite>
+</testdefinition>

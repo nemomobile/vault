@@ -26,6 +26,14 @@ Requires: %{name} = %{version}-%{release}
 %description devel
 vault library header files etc.
 
+%package tests
+Summary:    Tests for vault
+License:    LGPLv2.1
+Group:      System Environment/Libraries
+Requires:   %{name} = %{version}-%{release}
+%description tests
+%summary
+
 %prep
 %setup -q
 
@@ -53,6 +61,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/pkgconfig/vault-unit.pc
 %dir %{_includedir}/vault
 %{_includedir}/vault/*.hpp
+
+%files tests
+%defattr(-,root,root,-)
+/opt/tests/vault/*
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
