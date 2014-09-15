@@ -36,7 +36,8 @@ enum test_ids {
     tid_config_local,
     tid_config_update,
     tid_simple_blobs,
-    tid_clear
+    tid_clear,
+    tid_cli_backup_restore_several_units
 };
 
 namespace {
@@ -282,6 +283,23 @@ void object::test<tid_clear>()
     ensure("Should destroy vault with snapshots", vlt.clear({{"destroy", true}, {"ignore_snapshots", true}}));
     ensure("Vault should be removed", !os::path::exists(vlt.root()));
 
+    on_exit();
+}
+
+
+template<> template<>
+void object::test<tid_cli_backup_restore_several_units>()
+{
+    auto on_exit = setup();
+    os::rmtree(home);
+    os::mkdir(home);
+    vault_init();
+    register_unit("unit1", false);
+    register_unit("unit2", false);
+    vault::Vault::execute({{"action", "export"}
+            , {"vault", vault_dir}
+            , {"home", home}
+            , {"unit", "unit1,unit2"}});
     on_exit();
 }
 
