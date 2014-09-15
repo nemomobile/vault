@@ -24,6 +24,12 @@
 #include <QDateTime>
 #include <QDir>
 
+namespace os = qtaround::os;
+namespace subprocess = qtaround::subprocess;
+namespace error = qtaround::error;
+namespace debug = qtaround::debug;
+
+
 namespace vault {
 
 static const QMap<File, QString> fileNames = {

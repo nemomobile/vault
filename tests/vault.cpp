@@ -16,6 +16,9 @@
 #include <iostream>
 #include <unistd.h>
 
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+
 namespace tut
 {
 

@@ -11,13 +11,14 @@
 #include <vault/config.hpp>
 #include <memory>
 
-namespace sys { class GetOpt; }
+namespace qtaround { namespace sys { class GetOpt; }}
 
 namespace vault { namespace unit {
 
-std::unique_ptr<sys::GetOpt> getopt();
+typedef std::unique_ptr<qtaround::sys::GetOpt> options_uptr;
+options_uptr getopt();
 
-int execute(std::unique_ptr<sys::GetOpt>, QVariantMap const &info);
+int execute(options_uptr, QVariantMap const &info);
 
 }}
 

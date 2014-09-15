@@ -22,6 +22,8 @@ namespace vault { namespace config {
 
 namespace {
 
+namespace os = qtaround::os;
+
 const QString prefix = ".f8b52b7481393a3e6ade051ecfb549fa";
 
 static inline QString units_path(QString const &vaultDir)

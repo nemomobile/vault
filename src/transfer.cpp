@@ -18,6 +18,12 @@
 #include "QVariant"
 #include "QMap"
 
+namespace os = qtaround::os;
+namespace subprocess = qtaround::subprocess;
+namespace error = qtaround::error;
+namespace debug = qtaround::debug;
+using qtaround::subprocess::Process;
+
 namespace {
 
 using vault::File;

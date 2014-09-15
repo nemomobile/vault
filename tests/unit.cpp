@@ -13,6 +13,11 @@
 #include <iostream>
 #include <unistd.h>
 
+namespace os = qtaround::os;
+namespace subprocess = qtaround::subprocess;
+namespace error = qtaround::error;
+namespace sys = qtaround::sys;
+
 namespace tut
 {
 
@@ -77,7 +82,7 @@ void setup()
         auto root_path = it.value();
 
         mkdir(root_path);
-        using os::path;
+        namespace path = os::path;
         auto dir_content = path::join(root_path, "content");
         mkdir(dir_content);
         mkdir(path::join(dir_content, "content_subdir"));

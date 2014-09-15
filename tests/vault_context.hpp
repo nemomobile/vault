@@ -10,6 +10,11 @@
 
 namespace {
 
+using qtaround::subprocess::Process;
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+namespace util = qtaround::util;
+
 QSet<QString> get_ftree(QString const &root)
 {
     Process ps;

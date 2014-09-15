@@ -7,6 +7,12 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+namespace sys = qtaround::sys;
+namespace json = qtaround::json;
+namespace debug = qtaround::debug;
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);

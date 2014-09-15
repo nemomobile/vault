@@ -62,7 +62,7 @@ public:
 signals:
     void vaultChanged();
 private:
-    static subprocess::Process doIO(IoCmd const &info);
+    static qtaround::subprocess::Process doIO(IoCmd const &info);
     static void validateDump(QString const &archive, QVariantMap const &err);
     void estimateSpace();
     void exportStorage(progressCallback);

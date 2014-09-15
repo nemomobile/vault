@@ -22,6 +22,8 @@
 #include <iostream>
 #include <unistd.h>
 
+namespace subprocess = qtaround::subprocess;
+
 namespace tut
 {
 

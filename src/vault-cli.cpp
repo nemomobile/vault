@@ -13,6 +13,8 @@
 #include <vault/vault.hpp>
 #include <qtaround/debug.hpp>
 
+namespace debug = qtaround::debug;
+
 void set(QVariantMap &map, const QCommandLineParser &parser, const QString &option, bool optional = false)
 {
     if (!optional || parser.isSet(option)) {
