@@ -112,8 +112,8 @@ bool Vault::UnitPath::exists() const
 
 int Vault::execute(const QVariantMap &options)
 {
+    debug::debug("Executing", options);
     QString action = options.value("action").toString();
-    debug::debug("Action:", action);
     if (options.value("global").toBool()) {
         debug::debug("Global action");
         if (action == "register") {
@@ -376,6 +376,7 @@ bool Vault::ensureValid()
 
 Vault::Result Vault::backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback)
 {
+    debug::info("Backup units", units, ", home", home);
     Result res;
     res.failedUnits << units;
 
@@ -476,6 +477,7 @@ Vault::Result Vault::restore(const QString &snapshot, const QString &home, const
 
 Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
+    debug::info("Restore units", units, ", home", home);
     Result res;
     res.failedUnits << units;
 

@@ -49,15 +49,6 @@ namespace {
 using vault::Vault;
 std::unique_ptr<Vault> the_vault;
 
-void register_unit(QString const &vault_dir, QString const &name)
-{
-    QVariantMap data = {{"action", "register"},
-                        {"data", "name=" + name + ",group=group1,"
-                         + "script=./" + name},
-                        {"vault", vault_dir}};
-    return vault::Vault::execute(data);
-};
-
 void init_vault(QString const &vault_dir)
 {
     tut::ensure("Vault dir is path", !vault_dir.isEmpty());
@@ -72,7 +63,7 @@ void create_backup()
     auto vault_dir = str(get(context, "vault_dir"));
     init_vault(vault_dir);
     mktree(unit1_tree, str(get(context, "unit1_dir")));
-    register_unit(vault_dir, "unit1");
+    register_unit(vault_dir, "unit1", false);
 
     bool is_started = false, is_failed = false;
     the_vault->backup(home, {}, "", [&](const QString &, const QString &status) {
@@ -115,19 +106,6 @@ void object::test<tid_setup>()
     archive_dir = os::path::join(str(get(context, "home")), "sd");
     os::mkdir(archive_dir);
     create_backup();
-}
-
-void ensure_trees_equal(QString const &msg
-                        , QSet<QString> const &before
-                        , QSet<QString> const &after)
-{
-    auto before_wo_after = before - after;
-    auto after_wo_before = after - before;
-    // compare to see difference on failure
-    ensure_eq(msg + ": something is appeared"
-              , after_wo_before, QSet<QString>());
-    ensure_eq(msg + ": something was removed"
-              , before_wo_after, QSet<QString>());
 }
 
 template<> template<>

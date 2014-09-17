@@ -31,6 +31,23 @@ std::basic_ostream<CharT>& operator <<
     return dst;
 }
 
+QStringList strings()
+{
+    return QStringList();
 }
+
+template <typename ...A>
+QStringList strings(QString const &s, A &&...args)
+{
+    return QStringList(s) + strings(std::forward<A>(args)...);
+}
+
+}
+
+#define S_(...) strings(__VA_ARGS__).join(' ').toStdString()
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#define AT __FILE__  ":" TOSTRING(__LINE__)
 
 #endif // _VAULT_TESTS_COMMON_HPP_

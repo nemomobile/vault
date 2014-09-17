@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     try {
         QCoreApplication app(argc, argv);
         using namespace vault::unit;
-        execute(getopt(), get(context, "unit1").toMap());
+        execute(getopt(), get(context, "@UNIT_NAME@").toMap());
     } catch (error::Error const &e) {
         qDebug() << e;
     } catch (std::exception const &e) {
