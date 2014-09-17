@@ -86,8 +86,10 @@ QVariantMap initContext(QString const &home_subdir = "")
         home = os::path::join(home, home_subdir);
 
     auto config_dir = os::environ("VAULT_GLOBAL_CONFIG_DIR");
+    // global config_dir should be set from environment, it will be
+    // used instead of standard global config dir
     if (config_dir.isEmpty())
-        config_dir = os::path::join(home, "config");
+        error::raise({{"msg", "Need own global config dir for testing"}});
 
     context = {
         {"home", home}
