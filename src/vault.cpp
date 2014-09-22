@@ -139,7 +139,7 @@ void Vault::execute(const QVariantMap &options)
 
     Vault vault(options.value("vault").toString());
     QStringList units;
-    for (const QVariant &v: options.value("unit").toList()) {
+    for (const QVariant &v: options.value("unit").toString().split(",")) {
         units << v.toString();
     }
 
