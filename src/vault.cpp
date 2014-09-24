@@ -151,8 +151,9 @@ void Vault::execute(const QVariantMap &options)
         vault.restore(vault.snapshot(options.value("tag").toByteArray()), options.value("home").toString(), units);
     } else if (action == "list-snapshots") {
         auto snapshots = vault.snapshots();
+        QTextStream cout{stdout};
         for (const Snapshot &s: snapshots) {
-            qDebug() << s.tag().name();
+            cout << s.tag().name() << '\n';
         }
     } else if (action == "register") {
         if (!options.contains("data")) {
