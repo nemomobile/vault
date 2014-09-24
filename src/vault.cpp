@@ -360,7 +360,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
 
     if (!os::path::isDir(home)) {
         qWarning("Home is not a dir: %s", qPrintable(home));
-        return res;
+        return std::move(res);
     }
 
     ProgressCallback progress = callback ? callback : [](const QString &name, const QString &status) {

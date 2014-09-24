@@ -42,6 +42,13 @@ public:
     struct Result {
         QStringList succededUnits;
         QStringList failedUnits;
+        Result() {}
+        Result(Result &&from)
+            : succededUnits(std::move(from.succededUnits))
+            , failedUnits(std::move(from.failedUnits))
+        {}
+        Result(Result const &) = delete;
+        Result & operator = (Result const &) = delete;
     };
     struct UnitPath {
         QString path;
