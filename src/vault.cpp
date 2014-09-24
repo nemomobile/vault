@@ -399,15 +399,18 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         }
     }
 
-    QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
-    qDebug()<<timeTag<<message;
-    QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
-    writeFile(fileName(File::Message), msg);
-    m_vcs.add(fileName(File::Message));
-    Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
-    commit.addNote(message);
-    tagSnapshot(timeTag);
-
+    if (res.succededUnits.size()) {
+        QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
+        qDebug()<<timeTag<<message;
+        QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
+        writeFile(fileName(File::Message), msg);
+        m_vcs.add(fileName(File::Message));
+        Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
+        commit.addNote(message);
+        tagSnapshot(timeTag);
+    } else {
+        debug::warning("There is no succeeded units, no tag");
+    }
     return res;
 }
 
