@@ -104,7 +104,7 @@ bool Vault::UnitPath::exists() const
     return os::path::isDir(path);
 }
 
-void Vault::execute(const QVariantMap &options)
+int Vault::execute(const QVariantMap &options)
 {
     QString action = options.value("action").toString();
     debug::debug("Action:", action);
@@ -130,7 +130,7 @@ void Vault::execute(const QVariantMap &options)
         } else {
             error::raise({{"msg", "Unknown action"}, {"action", action}});
         }
-        return;
+        return 0;
     }
 
     if (!options.contains("vault")) {
@@ -140,15 +140,28 @@ void Vault::execute(const QVariantMap &options)
     Vault vault(options.value("vault").toString());
     QStringList units{str(options.value("unit")).split(",", QString::SkipEmptyParts)};
 
+    auto unitsResult = [](Result &&res) {
+        debug::info("Succeeded units:", res.succededUnits.join(","));
+        auto failedCount = res.failedUnits.size();
+        if (failedCount)
+            debug::warning("Failed units:", res.failedUnits.join(","));
+
+        return failedCount;
+    };
+
     if (action == "init") {
         vault.init(parseKvPairs(options.value("git_config").toString()));
     } else if (action == "export" || action == "backup") {
-        vault.backup(options.value("home").toString(), units, options.value("message").toString());
+        return unitsResult(vault.backup
+                           (options.value("home").toString(), units
+                            , options.value("message").toString()));
     } else if (action == "import" || action == "restore") {
         if (!options.contains("tag")) {
             error::raise({{"msg", "tag should be provided to restore"}});
         }
-        vault.restore(vault.snapshot(options.value("tag").toByteArray()), options.value("home").toString(), units);
+        return unitsResult(vault.restore
+                           (vault.snapshot(options.value("tag").toByteArray())
+                            , options.value("home").toString(), units));
     } else if (action == "list-snapshots") {
         auto snapshots = vault.snapshots();
         QTextStream cout{stdout};
@@ -169,6 +182,7 @@ void Vault::execute(const QVariantMap &options)
     } else {
         error::raise({{"msg", "Unknown action"}, {"action", action}});
     }
+    return 0;
 }
 
 void Vault::registerConfig(const QVariantMap &config)

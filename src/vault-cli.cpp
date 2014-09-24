@@ -53,18 +53,18 @@ int main_(int argc, char **argv)
 
     options.insert("global", parser.isSet("global"));
 
-    vault::Vault::execute(options);
-    return 0;
+    return vault::Vault::execute(options);
 }
 
 int main(int argc, char **argv)
 {
+    int res = 1;
     try {
-        return main_(argc, argv);
+        res = main_(argc, argv);
     } catch (std::exception const &e) {
         debug::error("Error:",  e.what());
     } catch (...) {
         debug::error("Unknown error");
     }
-    return 1;
+    return res;
 }

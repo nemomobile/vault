@@ -81,7 +81,7 @@ public:
 
     bool writeFile(const QString &file, const QString &content);
 
-    static void execute(const QVariantMap &options);
+    static int execute(const QVariantMap &options);
     bool ensureValid();
     void reset(const QByteArray &treeish = QByteArray());
 
