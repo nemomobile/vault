@@ -138,10 +138,7 @@ void Vault::execute(const QVariantMap &options)
     }
 
     Vault vault(options.value("vault").toString());
-    QStringList units;
-    for (const QVariant &v: options.value("unit").toString().split(",")) {
-        units << v.toString();
-    }
+    QStringList units{str(options.value("unit")).split(",", QString::SkipEmptyParts)};
 
     if (action == "init") {
         vault.init(parseKvPairs(options.value("git_config").toString()));
@@ -374,6 +371,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
 
     QStringList usedUnits = units;
     if (units.isEmpty()) {
+        debug::info("Units list is not supplied, backup all units");
         QMap<QString, config::Unit> units = config().units();
         for (auto i = units.begin(); i != units.end(); ++i) {
             usedUnits << i.key();
@@ -695,9 +693,12 @@ struct Unit
 bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
 {
     Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();
-    QString name = unit;
 
     try {
+        debug::info("Backup unit", unit);
+        if (unit.isEmpty())
+            error::raise({{"msg", "Trying to backup unit w/o name"}});
+
         callback(unit, "begin");
         Unit u(unit, home, &m_vcs, config().units().value(unit));
         u.backup();
@@ -705,7 +706,7 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
     } catch (error::Error err) {
         debug::error(err.what(), "\n");
         callback(unit, err.m.contains("reason") ? err.m.value("reason").toString() : "fail");
-        m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories | CleanOptions::IgnoreIgnores, name);
+        m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories | CleanOptions::IgnoreIgnores, unit);
         m_vcs.reset(ResetOptions::Hard, head.sha());
         return false;
     }
@@ -716,6 +717,10 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
 bool Vault::restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
 {
     try {
+        debug::info("Restore unit", unit);
+        if (unit.isEmpty())
+            error::raise({{"msg", "Trying to restore unit w/o name"}});
+
         callback(unit, "begin");
         Unit u(unit, home, &m_vcs, config().units().value(unit));
         u.restore();
