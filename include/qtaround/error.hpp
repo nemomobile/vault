@@ -21,12 +21,14 @@ public:
     virtual ~Error() noexcept(true) {}
     virtual const char* what() const noexcept(true)
     {
-        QString s;
-        QDebug(&s) << m;
+        if (s.isEmpty())
+            QDebug(&s) << m;
+
         return s.toUtf8();
     }
 
     QVariantMap m;
+    mutable QString s;
 };
 
 static inline QDebug operator << (QDebug dst, error::Error const &src)
