@@ -104,7 +104,7 @@ bool Vault::UnitPath::exists() const
     return os::path::isDir(path);
 }
 
-void Vault::execute(const QVariantMap &options)
+int Vault::execute(const QVariantMap &options)
 {
     QString action = options.value("action").toString();
     debug::debug("Action:", action);
@@ -130,7 +130,7 @@ void Vault::execute(const QVariantMap &options)
         } else {
             error::raise({{"msg", "Unknown action"}, {"action", action}});
         }
-        return;
+        return 0;
     }
 
     if (!options.contains("vault")) {
@@ -140,19 +140,33 @@ void Vault::execute(const QVariantMap &options)
     Vault vault(options.value("vault").toString());
     QStringList units{str(options.value("unit")).split(",", QString::SkipEmptyParts)};
 
+    auto unitsResult = [](Result &&res) {
+        debug::info("Succeeded units:", res.succededUnits.join(","));
+        auto failedCount = res.failedUnits.size();
+        if (failedCount)
+            debug::warning("Failed units:", res.failedUnits.join(","));
+
+        return failedCount;
+    };
+
     if (action == "init") {
         vault.init(parseKvPairs(options.value("git_config").toString()));
     } else if (action == "export" || action == "backup") {
-        vault.backup(options.value("home").toString(), units, options.value("message").toString());
+        return unitsResult(vault.backup
+                           (options.value("home").toString(), units
+                            , options.value("message").toString()));
     } else if (action == "import" || action == "restore") {
         if (!options.contains("tag")) {
             error::raise({{"msg", "tag should be provided to restore"}});
         }
-        vault.restore(vault.snapshot(options.value("tag").toByteArray()), options.value("home").toString(), units);
+        return unitsResult(vault.restore
+                           (vault.snapshot(options.value("tag").toByteArray())
+                            , options.value("home").toString(), units));
     } else if (action == "list-snapshots") {
         auto snapshots = vault.snapshots();
+        QTextStream cout{stdout};
         for (const Snapshot &s: snapshots) {
-            qDebug() << s.tag().name();
+            cout << s.tag().name() << '\n';
         }
     } else if (action == "register") {
         if (!options.contains("data")) {
@@ -168,6 +182,7 @@ void Vault::execute(const QVariantMap &options)
     } else {
         error::raise({{"msg", "Unknown action"}, {"action", action}});
     }
+    return 0;
 }
 
 void Vault::registerConfig(const QVariantMap &config)
@@ -360,7 +375,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
 
     if (!os::path::isDir(home)) {
         qWarning("Home is not a dir: %s", qPrintable(home));
-        return res;
+        return std::move(res);
     }
 
     ProgressCallback progress = callback ? callback : [](const QString &name, const QString &status) {
@@ -384,15 +399,18 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         }
     }
 
-    QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
-    qDebug()<<timeTag<<message;
-    QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
-    writeFile(fileName(File::Message), msg);
-    m_vcs.add(fileName(File::Message));
-    Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
-    commit.addNote(message);
-    tagSnapshot(timeTag);
-
+    if (res.succededUnits.size()) {
+        QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
+        qDebug()<<timeTag<<message;
+        QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
+        writeFile(fileName(File::Message), msg);
+        m_vcs.add(fileName(File::Message));
+        Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
+        commit.addNote(message);
+        tagSnapshot(timeTag);
+    } else {
+        debug::warning("There is no succeeded units, no tag");
+    }
     return res;
 }
 
