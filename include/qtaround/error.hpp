@@ -14,6 +14,15 @@
 
 namespace error {
 
+template <typename T>
+QString dump(T && t)
+{
+    QString s;
+    QDebug d(&s);
+    d << t;
+    return s;
+}
+
 class Error : public std::exception
 {
 public:
