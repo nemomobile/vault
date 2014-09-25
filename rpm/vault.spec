@@ -12,7 +12,7 @@ BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut) >= 0.0.3
 BuildRequires: pkgconfig(Qt5Core) >= 5.2.0
 BuildRequires: pkgconfig(Qt5Qml)
-BuildRequires: pkgconfig(qtaround) >= 0.1.7
+BuildRequires: pkgconfig(qtaround) >= 0.2.0
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
