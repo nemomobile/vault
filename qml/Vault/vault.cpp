@@ -100,14 +100,16 @@ public:
             data["src"] = m_transfer->getSrc();
             emit done(Vault::ExportImportPrepare, data);
         } catch (error::Error e) {
-            emit error(Vault::ExportImportPrepare, e.what());
+            emit error(Vault::ExportImportPrepare, e.m);
         }
     }
 
     Q_INVOKABLE void eiExecute()
     {
         if (!m_transfer) {
-            emit error(Vault::ExportImportExecute, "exportImportPrepare was not called");
+            emit error(Vault::ExportImportExecute
+                       , map({{"message", "exportImportPrepare was not called"}
+                               , {"reason", "Logic"}}));
             return;
         }
         try {
@@ -116,7 +118,7 @@ public:
             });
             emit done(Vault::ExportImportExecute, QVariantMap());
         } catch (error::Error e) {
-            emit error(Vault::ExportImportExecute, e.what());
+            emit error(Vault::ExportImportExecute, e.m);
         }
     }
 
@@ -140,7 +142,7 @@ public:
                 init(root);
             } catch (error::Error e) {
                 debug::error("Error reconnecting", e.what());
-                emit error(Vault::RemoveSnapshot, e.what());
+                emit error(Vault::RemoveSnapshot, e.m);
             }
         } else {
             debug::debug("There are some snapshots, continue");
@@ -150,7 +152,7 @@ public:
 
 signals:
     void progress(Vault::Operation op, const QVariantMap &map);
-    void error(Vault::Operation op, const QString &error);
+    void error(Vault::Operation op, const QVariantMap &error);
     void done(Vault::Operation op, const QVariantMap &);
 
 public:
@@ -218,7 +220,7 @@ void Vault::initWorker(bool reload)
         m_worker->init(m_root);
         emit done(Vault::Connect, QVariantMap());
     } catch (error::Error e) {
-        emit error(Vault::Connect, e.what());
+        emit error(Vault::Connect, e.m);
     }
 }
 

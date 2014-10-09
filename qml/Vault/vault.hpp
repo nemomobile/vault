@@ -59,7 +59,7 @@ signals:
 
     void done(Operation operation, const QVariantMap &data);
     void progress(Operation operation, const QVariantMap &data);
-    void error(Operation operation, const QString &error);
+    void error(Operation operation, const QVariantMap &error);
 
 private:
     void initWorker(bool reload);
