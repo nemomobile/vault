@@ -1,4 +1,9 @@
 install(
-  FILES git-vault-gc.sh git-vault-rebase-generate.awk git-vault-rebase-prepare.awk
+  PROGRAMS git-vault-gc
+  DESTINATION libexec/vault
+  )
+
+install(
+  FILES git-vault-rebase-generate.awk git-vault-rebase-prepare.awk
   DESTINATION libexec/vault
   )
