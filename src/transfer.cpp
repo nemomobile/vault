@@ -210,6 +210,8 @@ void CardTransfer::validateDump(QString const &archive, QVariantMap const &err)
 
 void CardTransfer::exportStorage(CardTransfer::progressCallback onProgress)
 {
+    auto v = getVault();
+    auto l = v ? v->lock() : nullptr;
     auto tag_fname = vault::fileName(File::State);
     QStringList options = {"-cf", dst_, "-C", src_, ".git", tag_fname};
     onProgress({{"type", "stage"}, {"stage", "Copy"}});
