@@ -156,7 +156,7 @@ int Vault::execute(const QVariantMap &options)
     };
 
     if (action == "init") {
-        vault.init(parseKvPairs(options.value("git_config").toString()));
+        vault.init(parseKvPairs(options.value("git-config").toString()));
     } else if (action == "export" || action == "backup") {
         return unitsResult(vault.backup
                            (options.value("home").toString(), units
