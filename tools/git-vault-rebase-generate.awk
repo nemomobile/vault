@@ -1,5 +1,6 @@
 BEGIN {
     ok=0
+    # prepare empty arrays
     split("", commits);
     split("", commands);
     split("", old_tags);

@@ -112,7 +112,7 @@ echo "REPLACE MASTER"
     git branch -D old-master) || error "replacing master"
 
 echo "CLEAR REFLOG"
-git reflog expire --expire=now --all || error "exiring reflog"
+git reflog expire --expire=now --all || error "clearing reflog"
 
 echo "REMOVING DANGLING BLOBS"
 for obj in $(git fsck --unreachable master \
