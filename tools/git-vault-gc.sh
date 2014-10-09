@@ -105,8 +105,11 @@ export -f rollback
 eval "$cmd" || error "$cmd"
 
 echo "REPLACE MASTER"
-# do it separetely to be on the safe side
-(git branch -D master && git branch -m migrate master) || error "replacing master"
+# do it separetely to be on the safe side and keep old master until the last moment
+(git branch -m migrate migrated && \
+    git branch -m master old-master && \
+    git branch -m migrated master && \
+    git branch -D old-master) || error "replacing master"
 
 echo "CLEAR REFLOG"
 git reflog expire --expire=now --all || error "exiring reflog"
