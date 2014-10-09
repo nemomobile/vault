@@ -1,5 +1,7 @@
+configure_file(vault-gc.service.in vault-gc.service @ONLY)
+
 install(
-  PROGRAMS git-vault-gc
+  PROGRAMS git-vault-gc gc-default
   DESTINATION libexec/vault
   )
 

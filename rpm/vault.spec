@@ -1,3 +1,5 @@
+%{!?_with_usersession: %{!?_without_usersession: %define _with_usersession --with-usersession}}
+
 Summary: Incremental backup/restore framework
 Name: vault
 Version: 0.1.0
@@ -12,12 +14,14 @@ BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut) >= 0.0.3
 BuildRequires: pkgconfig(Qt5Core) >= 5.2.0
 BuildRequires: pkgconfig(Qt5Qml)
-BuildRequires: pkgconfig(qtaround) >= 0.2.0
+%{?_with_usersession:Requires: systemd-user-session-targets}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 %description
 Incremental backup/restore framework
+
+%{?_with_usersession:%define _userunitdir %{_libdir}/systemd/user/}
 
 %package devel
 Summary: vault headers etc.
@@ -45,6 +49,10 @@ make %{?jobs:-j%jobs}
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=%{buildroot}
 
+%if 0%{?_with_usersession:1}
+install -D -p -m644 tools/vault-gc.service %{buildroot}%{_userunitdir}/vault-gc.service
+%endif
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 
@@ -58,6 +66,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
 %{_bindir}/vault
 %{tools_dir}/*
+%if 0%{?_with_usersession:1}
+%{_userunitdir}/vault-gc.service
+%endif
 
 %files devel
 %defattr(-,root,root,-)
@@ -69,5 +80,14 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 /opt/tests/vault/*
 
-%post -p /sbin/ldconfig
-%postun -p /sbin/ldconfig
+%post
+/sbin/ldconfig || :
+%if 0%{?_with_usersession:1}
+    systemctl-user daemon-reload || :
+%endif
+
+%postun
+/sbin/ldconfig || :
+%if 0%{?_with_usersession:1}
+    systemctl-user daemon-reload || :
+%endif
