@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
         QCoreApplication app(argc, argv);
         using namespace vault::unit;
         execute(getopt(), info);
-    } catch (error::Error const &e) {
+    } catch (qtaround::error::Error const &e) {
         qDebug() << e;
     } catch (std::exception const &e) {
         qDebug() << e.what();

@@ -8,6 +8,10 @@
 
 #include "vault.hpp"
 
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+namespace debug = qtaround::debug;
+
 Q_DECLARE_METATYPE(Vault::Operation)
 static const int _vault_operation_ __attribute__((unused))
 = qRegisterMetaType<Vault::Operation>();

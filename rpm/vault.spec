@@ -12,6 +12,7 @@ BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut) >= 0.0.3
 BuildRequires: pkgconfig(Qt5Core) >= 5.2.0
 BuildRequires: pkgconfig(Qt5Qml)
+BuildRequires: pkgconfig(qtaround) >= 0.2.0
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
@@ -25,20 +26,13 @@ Requires: %{name} = %{version}-%{release}
 %description devel
 vault library header files etc.
 
-%package -n qtaround
-Summary: QtAround library
-Group: Development/Libraries
-%description -n qtaround
-QtAround library used to port the-vault to C++. Mostly consists of
-thin wrappers around Qt classes and standard Linux utilities.
-
-%package -n qtaround-devel
-Summary: QtAround library
-Group: Development/Libraries
-Requires: qtaround = %{version}-%{release}
-%description -n qtaround-devel
-QtAround library used to port the-vault to C++. Mostly consists of
-thin wrappers around Qt classes and standard Linux utilities.
+%package tests
+Summary:    Tests for vault
+License:    LGPLv2.1
+Group:      System Environment/Libraries
+Requires:   %{name} = %{version}-%{release}
+%description tests
+%summary
 
 %prep
 %setup -q
@@ -68,18 +62,9 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_includedir}/vault
 %{_includedir}/vault/*.hpp
 
-%files -n qtaround
+%files tests
 %defattr(-,root,root,-)
-%{_libdir}/libqtaround.so*
-
-%files -n qtaround-devel
-%defattr(-,root,root,-)
-%{_libdir}/pkgconfig/qtaround.pc
-%dir %{_includedir}/qtaround
-%{_includedir}/qtaround/*.hpp
+/opt/tests/vault/*
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
-
-%post -n qtaround -p /sbin/ldconfig
-%postun -n qtaround -p /sbin/ldconfig

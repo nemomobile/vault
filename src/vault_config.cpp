@@ -18,6 +18,11 @@
 #include <qtaround/debug.hpp>
 #include <qtaround/json.hpp>
 
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+namespace json = qtaround::json;
+namespace debug = qtaround::debug;
+
 namespace vault { namespace config {
 
 Unit::Unit()

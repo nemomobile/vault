@@ -21,3 +21,6 @@ examples/use_cutes
 src/vault-cli
 units/vault-*
 *.moc
+tests/tests.xml
+tests/*_unit.cpp
+tests/*_vault_test

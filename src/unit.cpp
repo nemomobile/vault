@@ -15,6 +15,13 @@
 
 #include <QString>
 
+namespace os = qtaround::os;
+namespace error = qtaround::error;
+namespace sys = qtaround::sys;
+namespace util = qtaround::util;
+namespace json = qtaround::json;
+namespace debug = qtaround::debug;
+
 namespace vault { namespace unit {
 
 static const unsigned current_version = 1;
