@@ -52,6 +52,7 @@ public:
     Q_INVOKABLE QString notes(const QString &snapshot) const;
 
     Q_INVOKABLE void registerUnit(const QJSValue &unit, bool global);
+    Q_INVOKABLE void startGc();
 
 signals:
     void rootChanged();

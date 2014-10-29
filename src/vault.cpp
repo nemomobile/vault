@@ -6,6 +6,7 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
+#include "config.hpp"
 #include <vault/vault.hpp>
 
 #include <qtaround/util.hpp>
@@ -28,7 +29,6 @@ namespace os = qtaround::os;
 namespace subprocess = qtaround::subprocess;
 namespace error = qtaround::error;
 namespace debug = qtaround::debug;
-
 
 namespace vault {
 
@@ -185,6 +185,16 @@ int Vault::execute(const QVariantMap &options)
             error::raise({{"action", action}, {"msg", "Needs unit name"}});
         }
         vault.unregisterUnit(options.value("unit").toString());
+    } else if (action == "gc") {
+        auto p = subprocess::Process();
+        p.setWorkingDirectory(vault.root());
+        p.start(os::path::join(VAULT_LIBEXEC_PATH, "git-vault-gc"), {});
+        p.wait(-1);
+        QTextStream out(stdout, QIODevice::WriteOnly);
+        QTextStream err(stderr, QIODevice::WriteOnly);
+        out << p.stdout() << endl;
+        err << p.stderr() << endl;
+        return p.rc();
     } else {
         error::raise({{"msg", "Unknown action"}, {"action", action}});
     }

@@ -1,6 +1,8 @@
 PROJECT(VAULT)
 cmake_minimum_required(VERSION 2.8.8)
 
+set(prefix ${CMAKE_INSTALL_PREFIX})
+
 IF(NOT DEFINED VERSION OR VERSION STREQUAL "")
 message(FATAL_ERROR "Define VERSION")
 ENDIF(NOT DEFINED VERSION OR VERSION STREQUAL "")
@@ -61,6 +63,7 @@ add_subdirectory(src)
 add_subdirectory(examples)
 add_subdirectory(tests)
 add_subdirectory(qml/Vault)
+add_subdirectory(tools)
 
 configure_file(vault-unit.pc.in vault-unit.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/vault-unit.pc DESTINATION ${DST_LIB}/pkgconfig)

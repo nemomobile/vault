@@ -308,4 +308,10 @@ void Vault::registerUnit(const QJSValue &unit, bool global)
     }
 }
 
+void Vault::startGc()
+{
+    if (os::system("systemctl", {"--user", "start", "vault-gc.service"}) != 0)
+        debug::error("Can't start vault-gc.service");
+}
+
 #include "vault.moc"
