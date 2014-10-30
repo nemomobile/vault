@@ -37,6 +37,7 @@ static const QMap<File, QString> fileNames = {
     , {File::VersionTree, ".vault"}
     , {File::VersionRepo, os::path::join(".git", "vault.version")}
     , {File::State, ".vault.state"}
+    , {File::Lock, ".vault.lock"}
 };
 
 QString fileName(File id)
@@ -144,6 +145,7 @@ int Vault::execute(const QVariantMap &options)
     }
 
     Vault vault(options.value("vault").toString());
+    auto l = vault.lock();
     QStringList units{str(options.value("unit")).split(",", QString::SkipEmptyParts)};
 
     auto unitsResult = [](Result &&res) {
@@ -232,19 +234,22 @@ int Vault::getVersion(File src)
     return readFile(fileName(src)).toInt();
 }
 
-QString Vault::absolutePath(QString const &relativePath)
+QString Vault::absolutePath(QString const &relativePath) const
 {
     return os::path::join(m_path, relativePath);
 }
 
 void Vault::setup(const QVariantMap *config)
 {
-    auto createRepo = [this]() {
+    debug::debug("Setup vault", config ? *config : QVariantMap{});
+    auto l = lock();
+    auto createRepo = [this, &l]() {
         debug::debug("Creating repo at", m_path);
         if (!os::path::exists(m_path))
             if (!os::mkdir(m_path))
                 error::raise({{"msg", "Can't create repo dir"}, {"path", m_path}});
 
+        l = lock();
         if (!m_vcs.init())
             error::raise({{"msg", "Can't init git repo"}, {"path", m_path}});
     };
@@ -352,6 +357,7 @@ void Vault::setup(const QVariantMap *config)
 bool Vault::init(const QVariantMap &config)
 {
     try {
+        auto l = lock();
         setup(&config);
         return true;
     } catch (std::exception const &e) {
@@ -364,6 +370,7 @@ bool Vault::init(const QVariantMap &config)
 
 bool Vault::ensureValid()
 {
+    auto l = lock();
     if (!os::path::exists(absolutePath(".git"))) {
         debug::info("Can't find .git", m_path);
         return false;
@@ -387,6 +394,7 @@ bool Vault::ensureValid()
 Vault::Result Vault::backup(const QString &home, const QStringList &units, const QString &message, const ProgressCallback &callback)
 {
     debug::info("Backup units", units, ", home", home);
+    auto l = lock();
     Result res;
     res.failedUnits << units;
 
@@ -433,6 +441,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
 
 bool Vault::clear(const QVariantMap &options)
 {
+    auto l = lock();
     if (!os::path::isDir(m_path)) {
         debug::info("vault.clear:", "Path", m_path, "is not a dir");
         return false;
@@ -465,6 +474,7 @@ bool Vault::clear(const QVariantMap &options)
 
 void Vault::reset(const QByteArray &treeish)
 {
+    auto l = lock();
     m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories);
     if (!treeish.isEmpty()) {
         m_vcs.reset(ResetOptions::Hard, treeish);
@@ -481,12 +491,14 @@ void Vault::resetMaster()
 
 Vault::Result Vault::restore(const QString &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
+    auto l = lock();
     Snapshot ss(Gittin::Tag(&m_vcs, QString(">") + snapshot));
     return restore(ss, home, units, callback);
 }
 
 Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
+    auto l = lock();
     debug::info("Restore units", units, ", home", home);
     Result res;
     res.failedUnits << units;
@@ -523,6 +535,7 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
 
 QList<Snapshot> Vault::snapshots() const
 {
+    auto l = lock();
     auto tags = m_vcs.tags();
     QList<Snapshot> list;
     for (const Gittin::Tag &tag: tags) {
@@ -535,6 +548,7 @@ QList<Snapshot> Vault::snapshots() const
 
 Snapshot Vault::snapshot(const QByteArray &tagName) const
 {
+    auto l = lock();
     auto tags = m_vcs.tags();
     for (const Gittin::Tag &tag: tags) {
         if (tag.name() == tagName) {
@@ -547,6 +561,7 @@ Snapshot Vault::snapshot(const QByteArray &tagName) const
 
 QString Vault::notes(const QString &snapshot)
 {
+    auto l = lock();
     Gittin::Tag tag(&m_vcs, snapshot);
     return tag.notes();
 }
@@ -773,6 +788,30 @@ bool Vault::restoreUnit(const QString &home, const QString &unit, const Progress
 void Vault::tagSnapshot(const QString &msg)
 {
     m_vcs.tag(QLatin1String(">") + msg);
+}
+
+/**
+ * \note thread-unsafe
+ */
+Lock Vault::lock() const
+{
+    if (!exists())
+        return Lock{};
+    auto handle = m_barrier.lock();
+    if (!handle) {
+        int timeout = 1 * 1000;
+        auto lock_fname = absolutePath(fileName(File::Lock));
+        auto gotLock = [&handle](os::FileLock l) { handle = box(std::move(l)); };
+        auto locker = os::tryLock(lock_fname, gotLock, timeout);
+        while (locker) {
+            // max 8s timeout
+            if (timeout <= 4 * 1000)
+                timeout *= 2;
+            locker = os::tryLock(std::move(locker), gotLock, timeout);
+        }
+        m_barrier = handle;
+    }
+    return handle;
 }
 
 }

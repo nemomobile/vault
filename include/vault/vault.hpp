@@ -8,6 +8,7 @@
  * @par License: LGPL 2.1 http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
  */
 
+#include <qtaround/os.hpp>
 #include <functional>
 
 #include <QString>
@@ -18,7 +19,8 @@
 
 namespace vault {
 
-enum class File { Message, VersionTree, VersionRepo, State };
+enum class File { Message, VersionTree, VersionRepo, State, Lock
+        , Last_ = Lock };
 
 QString fileName(File);
 
@@ -35,6 +37,10 @@ public:
 private:
     Gittin::Tag m_tag;
 };
+
+typedef std::shared_ptr<qtaround::os::FileLock> Lock;
+typedef std::weak_ptr<qtaround::os::FileLock> Barrier;
+
 
 class Vault
 {
@@ -85,6 +91,8 @@ public:
     bool ensureValid();
     void reset(const QByteArray &treeish = QByteArray());
 
+    Lock lock() const;
+
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
@@ -93,7 +101,7 @@ private:
     void resetMaster();
 
     void setup(const QVariantMap *config);
-    QString absolutePath(QString const &);
+    QString absolutePath(QString const &) const;
     QString readFile(const QString &relPath);
 
     void setVersion(File, int);
@@ -103,6 +111,7 @@ private:
     const QString m_blobStorage;
     Gittin::Repo m_vcs;
     config::Vault m_config;
+    mutable Barrier m_barrier;
 };
 
 }
