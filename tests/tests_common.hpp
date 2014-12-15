@@ -2,6 +2,7 @@
 #define _VAULT_TESTS_COMMON_HPP_
 
 #include <QStringList>
+#include <qtaround/util.hpp>
 
 namespace {
 
