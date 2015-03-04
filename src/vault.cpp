@@ -337,8 +337,13 @@ void Vault::setup(const QVariantMap *config)
     } else if (config) {
         debug::info("Repository initialization is requested");
 
-        if (os::path::exists(m_path))
-            error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
+        if (os::path::exists(m_path)) {
+            QDir d(m_path);
+            if (!d.entryList(QDir::NoDotAndDotDot).isEmpty())
+                error::raise({
+                        {"msg", "Vault dir already exists and not empty"}
+                        , {"path", m_path}});
+        }
 
         try {
             createRepo();
