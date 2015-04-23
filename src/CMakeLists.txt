@@ -9,7 +9,7 @@ link_directories(
 
 set(CMAKE_AUTOMOC TRUE)
 
-configure_file(config.hpp.in config.hpp @ONLY)
+configure_file(config.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/config.hpp @ONLY)
 
 add_library(vault-core SHARED vault.cpp vault_config.cpp)
 qt5_use_modules(vault-core Core)
