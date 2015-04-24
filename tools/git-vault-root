@@ -1,0 +1,27 @@
+#!/bin/bash
+
+src=`dirname $0`
+src=`cd $src;pwd`
+source $src/vault-misc $src
+
+root=$(git rev-parse --show-toplevel)
+rc=$?
+
+if [ $rc -ne 0 ] || [ "x$root" == "x" ]; then
+    error 1 "Not a git `pwd`"
+fi
+
+if ! [ -d "$root" ]; then
+    error 2 "Wrong location, not a git repo? `pwd`"
+fi
+
+if [ -f $root/.vault ]; then
+    echo $root
+else
+    if [ root == "`dirname /`" ]; then
+        error 3 "Reached /, vault is not found"
+    fi
+    root=`dirname $root`
+    res=$(cd $root && git vault-root) || exit 34
+    echo $res
+fi
