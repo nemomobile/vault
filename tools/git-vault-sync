@@ -108,7 +108,7 @@ case $cp_tool in
     rsync)
         if [ $src_type == "local" ]; then
             cp_cmd="$cp_tool -avz"
-            src_prefix=$src_repo/
+            src_prefix="$src_repo/"
         else
             src_prefix=$user@$host:$src_repo/
             if [ "x$port" == "x" ]; then

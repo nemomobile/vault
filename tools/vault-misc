@@ -5,18 +5,7 @@ scripts_branch=scripts
 root_version=3
 root=
 
-trap "exit 1" TERM
 export TOP_PID=$$
-
-function warn {
-    echo "`basename $0`: Warning: ${@:1}" 1>&2;
-}
-
-function error {
-    TOP_RC=$1
-    echo "`basename $0`: Error: ${@:2}" 1>&2;
-    kill -s TERM $TOP_PID
-}
 
 is_trace=false
 if [ "x$VAULT_TRACE" != "x" ]; then
@@ -29,6 +18,58 @@ function trace {
     fi
 }
 
+
+normal_cleanup="true"
+failed_cleanup="true"
+is_failed=false
+
+function on_normal_exit
+{
+    if $is_failed; then
+        exit 1
+    else
+        trace "Normal exit from $BASHPID"
+        trace "Exec: $normal_cleanup"
+        eval "$normal_cleanup"
+        exit 0
+    fi
+}
+
+is_exit_on_failure=true
+is_expect_success=true
+function on_failure
+{
+    if $is_expect_success; then
+        trace "Failure cleanup in $BASHPID"
+        trace "Exec: $failed_cleanup"
+        is_failed=true
+        eval "$failed_cleanup"
+        $is_exit_on_failure && exit 1
+    else
+        trace "Failure is expected"
+        is_failed=true
+    fi
+}
+trap on_failure TERM
+trap on_normal_exit EXIT
+#trap on_failure ERR
+
+function warn {
+    echo "`basename $0`: Warning: ${@:1}" 1>&2;
+}
+
+function error {
+    TOP_RC=$1
+    echo "`basename $0`: Error #$1: ${@:2}" 1>&2;
+    if [ $BASHPID -ne $TOP_PID ]; then
+        trace "Not a top script"
+        is_exit_on_failure=false
+        on_failure
+    fi
+    warn "Killing $TOP_PID"
+    kill -s TERM $TOP_PID
+}
+
 if [ $# -eq 1 ]; then
     src=$1
 else
@@ -39,7 +80,7 @@ trace "SCRIPTS DIR: $src"
 export PATH=$src:$PATH
 
 function ensure_param_count_op_exit_usage {
-    [ $@ -ge 3 ] || error 22 "Call as Num#0 OP Num#1"
+    [ $# -ge 3 ] || error 22 "Call as Num#0 OP Num#1"
     if ! [ $1 $2 $3 ]; then
         local name=`basename $0`
         echo "Expecting param count: $1 $2 $3" 1>&2;
@@ -72,7 +113,7 @@ function init_root {
     if [ "x$root" == "x" ]; then
         root=$(git vault-root)
         if [ $? -ne 0 ]; then
-            error $? "Not a vault?"
+            error $? "Not inside vault? $(pwd)"
         fi
         if [ "x$root" == "x" ]; then
             error 54 "Root is empty"
