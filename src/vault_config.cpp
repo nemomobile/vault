@@ -225,19 +225,24 @@ bool Vault::update(const QMap<QString, Unit> &src)
 bool Vault::update(const QVariantMap &src)
 {
     bool updated = false;
-    QStringList units = m_config.units().keys();
+    auto before = m_config.units();
     for (auto i = src.begin(); i != src.end(); ++i) {
         if (set(i.value().toMap())) {
             updated = true;
         }
     }
-    for (const QString &n: units) {
-        if (!src.contains(n)) {
-            if (!rm(n)) {
-                error::raise({{"msg", n + " is not removed??"}});
-            }
-            updated = true;
-        }
+    // remove local copy of the global unit if there is no global
+    // counterpart
+    for (auto it = before.cbegin(); it != before.cend(); ++it) {
+        auto name = it.key();
+        if (it.value().isLocal() || src.contains(name))
+            continue;
+
+        debug::info("Global unit", name, "is not registered, removing");
+        if (!rm(name))
+            error::raise({{"msg", name + " is not removed??"}});
+
+        updated = true;
     }
     return updated;
 }

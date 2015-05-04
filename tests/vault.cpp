@@ -174,7 +174,7 @@ void object::test<tid_config_update>()
 
     units = vlt->config().units();
     ensure("no unit1 in vault config", units.contains("unit1"));
-    ensure("unit2 should be removed from vault config", !units.contains("unit2"));
+    ensure("local unit2 should not be removed", units.contains("unit2"));
     on_exit();
 }
 

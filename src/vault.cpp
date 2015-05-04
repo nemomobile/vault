@@ -180,8 +180,12 @@ int Vault::execute(const QVariantMap &options)
         if (!options.contains("data")) {
             error::raise({{"action", action}, {"msg", "Needs data"}});
         }
-        qDebug()<<parseKvPairs(options.value("data").toString());
-        vault.registerConfig(parseKvPairs(options.value("data").toString()));
+        auto data = parseKvPairs(str(options["data"]));
+        if (options.contains("unit"))
+            data["unit"] = options["unit"];
+        data["local"] = true;
+        debug::info("Register local unit:", data);
+        vault.registerConfig(data);
     } else if (action == "unregister") {
         if (!options.contains("unit")) {
             error::raise({{"action", action}, {"msg", "Needs unit name"}});

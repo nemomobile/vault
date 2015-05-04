@@ -47,6 +47,7 @@ public:
     QString script() const;
     inline QVariantMap data() const { return m_data; }
 
+    bool isLocal() const { return is(m_data.value("local", QVariant(false))); }
 private:
     QVariantMap m_data;
 };
