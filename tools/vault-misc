@@ -70,14 +70,22 @@ function error {
     kill -s TERM $TOP_PID
 }
 
-if [ $# -eq 1 ]; then
-    src=$1
-else
-    src=`dirname $0`
-    src=`cd $src;pwd`
-fi
-trace "SCRIPTS DIR: $src"
-export PATH=$src:$PATH
+update_path () {
+    local my_path=$(dirname $1)
+    my_path=$(readlink -f $(cd $my_path;pwd))
+    if ! (echo $PATH | grep "^$my_path:.*" 1>/dev/null); then
+        export PATH=$my_path:$PATH
+    fi
+    if [ "x$VAULT_LIB_DIR" != "x" ]; then
+        [ -d $VAULT_LIB_DIR ] || error 6 "No such dir $VAULT_LIB_DIR"
+        local lib_path=$(readlink -f $VAULT_LIB_DIR)
+        if [ "$my_path" != "$lib_path" ]; then
+            export PATH=$lib_path:$PATH
+        fi
+    fi
+    trace "SCRIPTS PATH: $PATH"
+}
+update_path $0
 
 function ensure_param_count_op_exit_usage {
     [ $# -ge 3 ] || error 22 "Call as Num#0 OP Num#1"
@@ -109,9 +117,28 @@ function units_path {
     echo $1/.units/
 }
 
+function get_root {
+    current_root=$1
+    while true; do
+        current_root=$(cd $current_root && git rev-parse --show-toplevel)
+        if [ $? -ne 0 ] || [ "x$current_root" == "x" ] ||
+               ! [ -d "$current_root" ] ; then
+            error 1 "Not a git $1"
+        fi
+        if [ -f $current_root/.vault ]; then
+            echo $current_root
+            break
+        else
+            [ "$(readlink -f $current_root)" == "/" ] &&
+                error 33 "Reached /, vault is not found"
+            current_root=$(dirname $current_root)
+        fi
+    done
+}
+
 function init_root {
     if [ "x$root" == "x" ]; then
-        root=$(git vault-root)
+        root=$(get_root $(pwd))
         if [ $? -ne 0 ]; then
             error $? "Not inside vault? $(pwd)"
         fi
@@ -132,7 +159,6 @@ function init_root {
 function init_root_and_enter {
     init_root
     cd $root || error 2 "Can't enter $root"
-    echo $root
 }
 
 function get_vid {
@@ -174,7 +200,7 @@ function units {
 }
 
 function split_git_uri {
-    uri=$1
+    local uri=$1
     trace "split $uri"
     # parsing is too dumb now, it should be stricter
     ssh_re='(ssh://)?((.*)@)?(.*[^\\]):([0-9]*)(.*)'

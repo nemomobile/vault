@@ -3,7 +3,7 @@ exec=./vault-clone-blobs
 
 src=$(dirname $0)
 src=$(cd $src;pwd)
-source $src/vault-misc $src
+source $src/vault-testing.sh
 
 function assert_split {
     pattern=$1
@@ -26,7 +26,7 @@ function assert_split {
         *)
             error 4 "Unsupported uri: $uri"
     esac
-    
+
     if [ "$res" != "$2" ]; then
         error "FOR '$pattern': $res != $2"
         exit 1
@@ -47,5 +47,3 @@ assert_split user0@host1:12/home/dir2 "SRC:user=user0,host=host1,port=12,path=/h
 assert_split user0@host1.org:/home/dir2 "SRC:user=user0,host=host1.org,port=,path=/home/dir2"
 assert_split host1.org:/home/dir2 "SRC:user=$(whoami),host=host1.org,port=,path=/home/dir2"
 assert_split host1.org\\:/home/dir2 "SRC:path=host1.org\\:/home/dir2"
-
-
