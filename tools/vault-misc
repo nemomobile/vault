@@ -222,6 +222,21 @@ function split_git_uri {
     fi
 }
 
+function get_data_dir {
+    ensure_param_count_exit_usage $# 2 "get_data_dir <repo> <unit>"
+    echo $1/$2/data
+}
+
+function get_blobs_dir {
+    ensure_param_count_exit_usage $# 2 "get_blobs_dir <repo> <unit>"
+    echo $1/$2/blobs
+}
+
+function get_snapshots {
+    ensure_param_count_exit_usage $# 1 "get_snapshots <repo>"
+    vault -a list-snapshots -V $1
+}
+
 vault_misc=1
 function get_vault_lock_cmd {
     # wait for 30s
