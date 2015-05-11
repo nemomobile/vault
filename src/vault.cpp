@@ -635,6 +635,7 @@ struct Unit
             error::raise({{"msg", "Should be executable"}, {"script", script}});
         }
         QStringList args = { "--action", action,
+                             "--name", m_unit,
                              "--dir", QDir(m_data).absolutePath(),
                              "--bin-dir", QDir(m_blobs).absolutePath(),
                              "--home-dir", m_home };

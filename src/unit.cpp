@@ -35,6 +35,8 @@ QVariantMap options_info
                 , {"required", true}, {"has_param", true}})}
    , {"home-dir", map({{"short", "H"}, {"long", "home-dir"}
                 , {"required", true}, {"has_param", true}})}
+   , {"name", map({{"short", "n"}, {"long", "name"}
+                , {"required", true}, {"has_param", true}})}
    , {"action", map({{"short", "a"}, {"long", "action"}
                 , {"required", true}, {"has_param", true}})}};
 
