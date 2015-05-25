@@ -10,22 +10,21 @@
 
 #include <qtaround/util.hpp>
 #include <qtaround/subprocess.hpp>
+#include <cor/util.hpp>
 
 #include <QString>
 #include <QVariant>
 #include <QList>
 
-enum class Io { Exec, Options, OnProgress, EstSize, Dst, EOE };
-template <> struct StructTraits<Io>
+enum class Io { Exec, Options, OnProgress, EstSize, Dst, Last_ = Dst };
+typedef Record<Io, QString, QStringList
+               , std::function<void(QVariantMap &&)>
+               , long, QString> IoCmd;
+
+template <> struct RecordTraits<IoCmd>
 {
-    typedef std::tuple<QString, QStringList
-                       , std::function<void(QVariantMap &&)>
-                       , long, QString> type;
-
-    STRUCT_NAMES(Io, "Exec", "Options", "OnProgress", "EstSize", "Dst");
+    RECORD_FIELD_NAMES(IoCmd, "Exec", "Options", "OnProgress", "EstSize", "Dst");
 };
-
-typedef Struct<Io> IoCmd;
 
 namespace vault { class Vault; }
 
