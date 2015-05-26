@@ -42,6 +42,7 @@ ENDMACRO(UNIT_IMPL)
 
 UNIT_IMPL(unit1)
 UNIT_IMPL(unit2)
+install(PROGRAMS unit_fail_vault_test DESTINATION ${TESTS_DIR})
 
 configure_file(tests.xml.in tests.xml @ONLY)
 install(FILES tests.xml DESTINATION ${TESTS_DIR})

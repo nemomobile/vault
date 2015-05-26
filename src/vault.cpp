@@ -405,7 +405,6 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     debug::info("Backup units", units, ", home", home);
     auto l = lock();
     Result res;
-    res.failedUnits << units;
 
     if (!os::path::isDir(home)) {
         qWarning("Home is not a dir: %s", qPrintable(home));
@@ -417,6 +416,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     };
 
     resetMaster();
+    Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();
 
     QStringList usedUnits = units;
     if (units.isEmpty()) {
@@ -428,12 +428,14 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     }
     for (const QString &unit: usedUnits) {
         if (backupUnit(home, unit, progress)) {
-            res.failedUnits.removeOne(unit);
             res.succededUnits << unit;
+        } else {
+            res.failedUnits << unit;
+            break;
         }
     }
 
-    if (res.succededUnits.size()) {
+    if (res.succededUnits.size() == usedUnits.size()) {
         QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
         qDebug()<<timeTag<<message;
         QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
@@ -443,7 +445,8 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         commit.addNote(message);
         tagSnapshot(timeTag);
     } else {
-        debug::warning("There is no succeeded units, no tag");
+        debug::warning("Some unit backup is failed, no tag");
+        reset(head.sha());
     }
     return res;
 }

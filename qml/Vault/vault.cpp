@@ -64,10 +64,18 @@ public:
     Q_INVOKABLE void backup(const QString &home, const QStringList &units, const QString &message)
     {
         debug::debug("Backup: home", home);
-        m_vault->backup(home, units, message, [this](const QString unit, const QString &status) {
+        auto res = m_vault->backup(home, units, message, [this](const QString unit, const QString &status) {
             emit progress(Vault::Backup, {{"unit", unit}, {"status", status}});
         });
-        emit done(Vault::Backup, QVariantMap());
+        if (res.failedUnits.size() == 0) {
+            emit done(Vault::Backup, QVariantMap());
+        } else {
+            QVariantMap info{{"msg", "Backup of some units is failed"}
+                , {"reason", "Backup"}
+                , {"succeeded", res.succededUnits}
+                , {"failed", res.failedUnits}};
+            emit error(Vault::Backup, info);
+        }
     }
 
     QStringList snapshots() const
