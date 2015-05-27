@@ -18,6 +18,7 @@
 #include <unistd.h>
 
 namespace os = qtaround::os;
+namespace subprocess = qtaround::subprocess;
 namespace error = qtaround::error;
 
 namespace tut
@@ -41,7 +42,8 @@ enum test_ids {
     tid_config_update,
     tid_simple_blobs,
     tid_clear,
-    tid_cli_backup_restore_several_units
+    tid_cli_backup_restore_several_units,
+    tid_backup_fail
 };
 
 namespace {
@@ -174,7 +176,7 @@ void object::test<tid_config_update>()
 
     units = vlt->config().units();
     ensure("no unit1 in vault config", units.contains("unit1"));
-    ensure("unit2 should be removed from vault config", !units.contains("unit2"));
+    ensure("local unit2 should not be removed", units.contains("unit2"));
     on_exit();
 }
 
@@ -298,10 +300,52 @@ void object::test<tid_cli_backup_restore_several_units>()
     vault_init();
     register_unit(vault_dir, "unit1", false);
     register_unit(vault_dir, "unit2", false);
-    vault::Vault::execute({{"action", "export"}
+    auto rc = vault::Vault::execute({{"action", "export"}
             , {"vault", vault_dir}
             , {"home", home}
             , {"unit", "unit1,unit2"}});
+    ensure_eq("Should succeed", rc, 0);
+    on_exit();
+}
+
+template<> template<>
+void object::test<tid_backup_fail>()
+{
+    using vault::Vault;
+    auto on_exit = setup(tid_backup_fail);
+    auto describe = []() {
+        subprocess::Process ps;
+        ps.setWorkingDirectory(vault_dir);
+        ps.start("git", {"describe", "--tags", "--exact-match"});
+        return std::move(ps);
+    };
+    auto last_snapshot = []() {
+        return vlt->snapshots().last().name();
+    };
+    os::rmtree(home);
+    os::mkdir(home);
+    vault_init();
+    register_unit(vault_dir, "unit1", false);
+    register_unit(vault_dir, "unit2", false);
+    auto rc = Vault::execute({{"action", "export"}
+            , {"vault", vault_dir}
+            , {"home", home}
+            , {"unit", "unit1,unit2"}});
+    ensure_eq("These units should proceed", rc, 0);
+
+    auto snap1 = last_snapshot();
+
+    register_unit(vault_dir, "unit_fail", false);
+    rc = Vault::execute({{"action", "export"}
+            , {"vault", vault_dir}
+            , {"home", home}
+            , {"unit", "unit1,unit2,unit_fail"}});
+    ensure_eq("With failed unit it should fail", rc, 1);
+
+    auto ps = describe();
+    ensure("Git is not found", ps.wait(10));
+    ensure_eq("There should be a previous tag on top", ps.rc(), 0);
+    ensure_eq("Should be the same snapshot as before", snap1, last_snapshot());
     on_exit();
 }
 

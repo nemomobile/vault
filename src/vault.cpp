@@ -180,8 +180,12 @@ int Vault::execute(const QVariantMap &options)
         if (!options.contains("data")) {
             error::raise({{"action", action}, {"msg", "Needs data"}});
         }
-        qDebug()<<parseKvPairs(options.value("data").toString());
-        vault.registerConfig(parseKvPairs(options.value("data").toString()));
+        auto data = parseKvPairs(str(options["data"]));
+        if (options.contains("unit"))
+            data["unit"] = options["unit"];
+        data["local"] = true;
+        debug::info("Register local unit:", data);
+        vault.registerConfig(data);
     } else if (action == "unregister") {
         if (!options.contains("unit")) {
             error::raise({{"action", action}, {"msg", "Needs unit name"}});
@@ -337,8 +341,13 @@ void Vault::setup(const QVariantMap *config)
     } else if (config) {
         debug::info("Repository initialization is requested");
 
-        if (os::path::exists(m_path))
-            error::raise({{"msg", "Vault dir already exists, can't create"}, {"path", m_path}});
+        if (os::path::exists(m_path)) {
+            QDir d(m_path);
+            if (!d.entryList(QDir::NoDotAndDotDot).isEmpty())
+                error::raise({
+                        {"msg", "Vault dir already exists and not empty"}
+                        , {"path", m_path}});
+        }
 
         try {
             createRepo();
@@ -396,7 +405,6 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     debug::info("Backup units", units, ", home", home);
     auto l = lock();
     Result res;
-    res.failedUnits << units;
 
     if (!os::path::isDir(home)) {
         qWarning("Home is not a dir: %s", qPrintable(home));
@@ -408,6 +416,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     };
 
     resetMaster();
+    Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();
 
     QStringList usedUnits = units;
     if (units.isEmpty()) {
@@ -419,12 +428,14 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     }
     for (const QString &unit: usedUnits) {
         if (backupUnit(home, unit, progress)) {
-            res.failedUnits.removeOne(unit);
             res.succededUnits << unit;
+        } else {
+            res.failedUnits << unit;
+            break;
         }
     }
 
-    if (res.succededUnits.size()) {
+    if (res.succededUnits.size() == usedUnits.size()) {
         QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
         qDebug()<<timeTag<<message;
         QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
@@ -434,7 +445,8 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         commit.addNote(message);
         tagSnapshot(timeTag);
     } else {
-        debug::warning("There is no succeeded units, no tag");
+        debug::warning("Some unit backup is failed, no tag");
+        reset(head.sha());
     }
     return res;
 }

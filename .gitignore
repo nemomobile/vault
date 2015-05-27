@@ -23,5 +23,4 @@ units/vault-*
 *.moc
 tests/tests.xml
 tests/*_unit.cpp
-tests/*_vault_test
 src/config.hpp
