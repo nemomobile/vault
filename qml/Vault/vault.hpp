@@ -27,9 +27,15 @@ public:
         Restore,
         RemoveSnapshot,
         ExportImportPrepare,
-        ExportImportExecute
+        ExportImportExecute,
+        Data
     }
     Q_ENUMS(Operation);
+
+    enum DataType {
+        SnapshotUnits
+    }
+    Q_ENUMS(DataType);
 
     explicit Vault(QObject *parent = nullptr);
     ~Vault();
@@ -53,6 +59,7 @@ public:
 
     Q_INVOKABLE void registerUnit(const QJSValue &unit, bool global);
     Q_INVOKABLE void startGc();
+    Q_INVOKABLE void requestData(DataType, QVariantMap const &);
 
 signals:
     void rootChanged();
@@ -61,6 +68,8 @@ signals:
     void done(Operation operation, const QVariantMap &data);
     void progress(Operation operation, const QVariantMap &data);
     void error(Operation operation, const QVariantMap &error);
+
+    void data(DataType id, const QVariantMap &context);
 
 private:
     void initWorker(bool reload);

@@ -18,12 +18,15 @@
 #include <gittin/commit.hpp>
 #include <gittin/branch.hpp>
 #include <gittin/repostatus.hpp>
+#include <gittin/command.hpp>
 
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
 #include <QDateTime>
 #include <QDir>
+
+#include <tuple>
 
 namespace os = qtaround::os;
 namespace subprocess = qtaround::subprocess;
@@ -59,6 +62,11 @@ Snapshot::Snapshot(const Gittin::Tag &tag)
 {
 }
 
+Snapshot::Snapshot(Gittin::Repo *repo, const QString &name)
+    : m_tag(repo, QString(">") + name)
+{
+}
+
 QString Snapshot::name() const
 {
     return m_tag.name().mid(1);
@@ -68,8 +76,6 @@ void Snapshot::remove()
 {
     m_tag.destroy();
 }
-
-
 
 Vault::Vault(const QString &path)
      : m_path(path)
@@ -109,6 +115,18 @@ Vault::UnitPath Vault::unitPath(const QString &name) const
 bool Vault::UnitPath::exists() const
 {
     return os::path::isDir(path);
+}
+
+template <typename ... Args>
+std::tuple<int, QString, QString> executeIn
+(QString const &dir, QString const &vaultUtilName, Args && ... args)
+{
+    auto p = subprocess::Process();
+    p.setWorkingDirectory(dir);
+    p.start(os::path::join(VAULT_LIBEXEC_PATH, vaultUtilName)
+            , {std::forward<Args>(args)...});
+    p.wait(-1);
+    return std::make_tuple(p.rc(), p.stdout(), p.stderr());
 }
 
 int Vault::execute(const QVariantMap &options)
@@ -192,15 +210,12 @@ int Vault::execute(const QVariantMap &options)
         }
         vault.unregisterUnit(options.value("unit").toString());
     } else if (action == "gc") {
-        auto p = subprocess::Process();
-        p.setWorkingDirectory(vault.root());
-        p.start(os::path::join(VAULT_LIBEXEC_PATH, "git-vault-gc"), {});
-        p.wait(-1);
+        auto res = executeIn(vault.root(), "git-vault-gc");
         QTextStream out(stdout, QIODevice::WriteOnly);
         QTextStream err(stderr, QIODevice::WriteOnly);
-        out << p.stdout() << endl;
-        err << p.stderr() << endl;
-        return p.rc();
+        out << std::get<1>(res) << endl;
+        err << std::get<2>(res) << endl;
+        return std::get<0>(res);
     } else {
         error::raise({{"msg", "Unknown action"}, {"action", action}});
     }
@@ -504,7 +519,7 @@ void Vault::resetMaster()
 Vault::Result Vault::restore(const QString &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
 {
     auto l = lock();
-    Snapshot ss(Gittin::Tag(&m_vcs, QString(">") + snapshot));
+    Snapshot ss(&m_vcs, snapshot);
     return restore(ss, home, units, callback);
 }
 
@@ -576,6 +591,23 @@ QString Vault::notes(const QString &snapshot)
     auto l = lock();
     Gittin::Tag tag(&m_vcs, snapshot);
     return tag.notes();
+}
+
+QList<QString> Vault::units(QString const & snapshotName) const
+{
+    auto l = lock();
+    QList<QString> result;
+    auto res = executeIn(root(), "git-vault-snapshot-units", snapshotName);
+    if (!std::get<0>(res)) {
+        auto data = str(std::get<1>(res));
+        result = data.split("\n", QString::SkipEmptyParts);
+    } else {
+        QTextStream err(stderr, QIODevice::WriteOnly);
+        err << "Error while running git-vault-snapshot-units\n";
+        err << std::get<1>(res);
+        err << std::get<2>(res);
+    }
+    return result;
 }
 
 bool Vault::exists() const
@@ -718,16 +750,16 @@ struct Unit
         }
 
         if (m_vcs->status(m_root.path()).isClean()) {
-            debug::info("Nothing to backup for ", name);
-            return;
-        }
-
-        // add all only in data dir to avoid blobs to get into git
-        // objects storage
-        m_vcs->add(os::path::join(m_root.path(), "data"), Gittin::AddOptions::All);
-        status = m_vcs->status(m_root.path());
-        if (status.hasDirtyFiles()) {
-            error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
+            debug::info("No changes for the unit ", name);
+            // but still commit to track user's intention to backup unit
+        } else {
+            // add all only in data dir to avoid blobs to get into git
+            // objects storage
+            m_vcs->add(os::path::join(m_root.path(), "data"), Gittin::AddOptions::All);
+            status = m_vcs->status(m_root.path());
+            if (status.hasDirtyFiles()) {
+                error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
+            }
         }
 
         m_vcs->commit(">" + name);
@@ -800,7 +832,7 @@ bool Vault::restoreUnit(const QString &home, const QString &unit, const Progress
 
 void Vault::tagSnapshot(const QString &msg)
 {
-    m_vcs.tag(QLatin1String(">") + msg);
+    m_vcs.tag(Snapshot(&m_vcs, msg).tag().name());
 }
 
 /**

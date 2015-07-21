@@ -28,7 +28,7 @@ class Snapshot
 {
 public:
     explicit Snapshot(const Gittin::Tag &commit);
-
+    explicit Snapshot(Gittin::Repo *repo, const QString &name);
     inline Gittin::Tag tag() const { return m_tag; }
 
     QString name() const;
@@ -73,6 +73,7 @@ public:
     bool clear(const QVariantMap &options);
 
     QList<Snapshot> snapshots() const;
+    QList<QString> units(QString const & snapshotName) const;
     Snapshot snapshot(const QByteArray &tag) const;
     QString notes(const QString &snapshotName);
 

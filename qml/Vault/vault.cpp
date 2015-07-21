@@ -18,6 +18,9 @@ static const int _vault_operation_ __attribute__((unused))
 Q_DECLARE_METATYPE(Vault::ImportExportAction)
 static const int _vault_importexportaction_ __attribute__((unused))
 = qRegisterMetaType<Vault::ImportExportAction>();
+Q_DECLARE_METATYPE(Vault::DataType)
+static const int _vault_datatype__ __attribute__((unused))
+= qRegisterMetaType<Vault::DataType>();
 
 class Worker : public QObject
 {
@@ -158,10 +161,44 @@ public:
         emit done(Vault::RemoveSnapshot, QVariantMap());
     }
 
+    QVariantMap units()
+    {
+        QVariantMap res;
+        for (auto &u: m_vault->config().units())
+            res.insert(u.name(), u.data());
+
+        return res;
+    }
+
+    Q_INVOKABLE void requestData(Vault::DataType dataType
+                                 , QVariantMap const &context)
+    {
+        try {
+            if (dataType == Vault::SnapshotUnits) {
+                auto snapshotName = str(context["snapshot"]);
+                auto reply = context;
+                auto unitNames = m_vault->units(snapshotName).toSet();
+                auto allUnits = units();
+                for (auto it = allUnits.begin(); it != allUnits.end(); ++it) {
+                    auto info = it.value().toMap();
+                    info["snapshot"] = unitNames.contains(it.key()) ? snapshotName : "";
+                    it.value() = info;
+                }
+                reply["units"] = allUnits;
+                emit data(dataType, reply);
+            }
+        } catch (error::Error const &e) {
+            emit error(Vault::Data, e.m);
+        } catch (...) {
+            emit error(Vault::Data, map({{"Exception", "unknown"}}));
+        }
+    }
+
 signals:
     void progress(Vault::Operation op, const QVariantMap &map);
     void error(Vault::Operation op, const QVariantMap &error);
     void done(Vault::Operation op, const QVariantMap &);
+    void data(Vault::DataType id, const QVariantMap &data);
 
 public:
     vault::Vault *m_vault;
@@ -223,6 +260,7 @@ void Vault::initWorker(bool reload)
         connect(m_worker, &Worker::progress, this, &Vault::progress);
         connect(m_worker, &Worker::error, this, &Vault::error);
         connect(m_worker, &Worker::done, this, &Vault::done);
+        connect(m_worker, &Worker::data, this, &Vault::data);
     }
     try {
         m_worker->init(m_root);
@@ -271,11 +309,7 @@ QStringList Vault::snapshots() const
 
 QVariantMap Vault::units() const
 {
-    QVariantMap units;
-    for (auto &u: m_worker->m_vault->config().units()) {
-        units.insert(u.name(), u.data());
-    }
-    return units;
+    return m_worker->units();
 }
 
 void Vault::resetHead()
@@ -320,6 +354,13 @@ void Vault::startGc()
 {
     if (os::system("systemctl", {"--user", "start", "vault-gc.service"}) != 0)
         debug::error("Can't start vault-gc.service");
+}
+
+void Vault::requestData(DataType dataType, QVariantMap const &context)
+{
+    QMetaObject::invokeMethod(m_worker, "requestData"
+                              , Q_ARG(Vault::DataType, dataType)
+                              , Q_ARG(QVariantMap, context));
 }
 
 #include "vault.moc"
