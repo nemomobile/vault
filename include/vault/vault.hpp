@@ -94,6 +94,7 @@ public:
 
     Lock lock() const;
 
+    std::tuple<QString, bool, QString> backupUnit(const QString &, const QString &);
     QString tagSnapshot(const QString &message);
 private:
     bool setState(const QString &state);

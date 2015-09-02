@@ -815,6 +815,18 @@ struct Unit
     config::Unit m_config;
 };
 
+/// \return (unit, isOk, reason)
+std::tuple<QString, bool, QString> Vault::backupUnit(const QString &home, const QString &unit)
+{
+    auto l = lock();
+    QString reason;
+    auto onDone = [&reason](const QString &, const QString &result) {
+        reason = result;
+    };
+    auto isOk = backupUnit(home, unit, onDone);
+    return std::make_tuple(unit, isOk, reason);
+}
+
 bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
 {
     Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();

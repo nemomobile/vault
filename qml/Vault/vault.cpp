@@ -64,12 +64,20 @@ public:
         emit done(Vault::Restore, QVariantMap());
     }
 
+    Q_INVOKABLE void backupUnit(const QString &home, const QString &unit)
+    {
+        debug::debug("Backup unit", unit);
+        auto res = m_vault->backupUnit(home, unit);
+        emit progress(Vault::Backup, {{"unit", unit}, {"status", std::get<2>(res)}});
+    }
+
     Q_INVOKABLE void tagSnapshot(const QString &message)
     {
         debug::debug("Tag snapshot, message:", message);
         auto tag = m_vault->tagSnapshot(message);
         emit done(Vault::Backup, {{"tag", tag}});
     }
+
     Q_INVOKABLE void backup(const QString &home, const QStringList &units, const QString &message)
     {
         debug::debug("Backup: home", home);
@@ -369,6 +377,12 @@ void Vault::requestData(DataType dataType, QVariantMap const &context)
                               , Q_ARG(QVariantMap, context));
 }
 
+Q_INVOKABLE void Vault::backupUnit(const QString &unit)
+{
+    QMetaObject::invokeMethod(m_worker, "backupUnit"
+                              , Q_ARG(QString, m_home)
+                              , Q_ARG(QString, unit));
+}
 
 Q_INVOKABLE void Vault::tagSnapshot(const QString &message)
 {
