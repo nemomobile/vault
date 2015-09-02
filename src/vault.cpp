@@ -451,19 +451,38 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
     }
 
     if (res.succededUnits.size() == usedUnits.size()) {
-        QString timeTag = QDateTime::currentDateTimeUtc().toString("yyyy-MM-ddTHH-mm-ss.zzzZ");
-        qDebug()<<timeTag<<message;
-        QString msg = message.isEmpty() ? timeTag : message + '\n' + timeTag;
-        writeFile(fileName(File::Message), msg);
-        m_vcs.add(fileName(File::Message));
-        Gittin::Commit commit = m_vcs.commit(timeTag + '\n' + msg);
-        commit.addNote(message);
-        tagSnapshot(timeTag);
+        tagSnapshot(message);
     } else {
         debug::warning("Some unit backup is failed, no tag");
         reset(head.sha());
     }
     return res;
+}
+
+/// \return snapshot tag name
+QString Vault::tagSnapshot(const QString &message)
+{
+    static const QString timeFormat{"yyyy-MM-ddTHH-mm-ss.zzzZ"};
+
+    auto l = lock();
+    // TODO error checking
+    m_vcs.checkout("master");
+
+    auto timeTag = QDateTime::currentDateTimeUtc().toString(timeFormat);
+    debug::info("Tag", timeTag, message);
+    auto metadata = message.isEmpty() ? timeTag : message + '\n' + timeTag;
+    writeFile(fileName(File::Message), metadata);
+    m_vcs.add(fileName(File::Message));
+    Gittin::Commit commit = m_vcs.commit(metadata);
+    // message can be theoretically updated later and it should not
+    // change commit id, so add it as a not. Initial message is saved
+    // in the commit and message file
+    commit.addNote(message);
+
+    Snapshot snapshot{&m_vcs, timeTag};
+    auto tagName = snapshot.tag().name();
+    m_vcs.tag(tagName);
+    return tagName;
 }
 
 bool Vault::clear(const QVariantMap &options)
@@ -838,11 +857,6 @@ bool Vault::restoreUnit(const QString &home, const QString &unit, const Progress
     }
 
     return true;
-}
-
-void Vault::tagSnapshot(const QString &msg)
-{
-    m_vcs.tag(Snapshot(&m_vcs, msg).tag().name());
 }
 
 /**

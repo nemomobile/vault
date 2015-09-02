@@ -94,11 +94,11 @@ public:
 
     Lock lock() const;
 
+    QString tagSnapshot(const QString &message);
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
-    void tagSnapshot(const QString &msg);
     void resetMaster();
 
     void setup(const QVariantMap *config);
