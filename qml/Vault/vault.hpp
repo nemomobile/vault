@@ -28,7 +28,8 @@ public:
         RemoveSnapshot,
         ExportImportPrepare,
         ExportImportExecute,
-        Data
+        Data,
+        Maintenance
     }
     Q_ENUMS(Operation);
 
@@ -61,6 +62,7 @@ public:
     Q_INVOKABLE void startGc();
     Q_INVOKABLE void requestData(DataType, QVariantMap const &);
 
+    Q_INVOKABLE void reset();
     Q_INVOKABLE void backupUnit(const QString &unit);
     Q_INVOKABLE void tagSnapshot(const QString &message);
 

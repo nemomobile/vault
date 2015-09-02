@@ -96,11 +96,11 @@ public:
 
     std::tuple<QString, bool, QString> backupUnit(const QString &, const QString &);
     QString tagSnapshot(const QString &message);
+    void resetMaster();
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
-    void resetMaster();
 
     void setup(const QVariantMap *config);
     QString absolutePath(QString const &) const;

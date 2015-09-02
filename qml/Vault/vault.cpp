@@ -64,6 +64,13 @@ public:
         emit done(Vault::Restore, QVariantMap());
     }
 
+    Q_INVOKABLE void reset()
+    {
+        debug::debug("Reset storage");
+        m_vault->resetMaster();
+        emit done(Vault::Maintenance, {{"operation", "reset"}});
+    }
+
     Q_INVOKABLE void backupUnit(const QString &home, const QString &unit)
     {
         debug::debug("Backup unit", unit);
@@ -375,6 +382,12 @@ void Vault::requestData(DataType dataType, QVariantMap const &context)
     QMetaObject::invokeMethod(m_worker, "requestData"
                               , Q_ARG(Vault::DataType, dataType)
                               , Q_ARG(QVariantMap, context));
+}
+
+/// reset storage to the master head, cleanup tree
+void Vault::reset()
+{
+    QMetaObject::invokeMethod(m_worker, "reset");
 }
 
 Q_INVOKABLE void Vault::backupUnit(const QString &unit)
