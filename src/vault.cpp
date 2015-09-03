@@ -678,133 +678,13 @@ Gittin::Commit commitEvenIfClean(Gittin::Repo &vcs, QString const &msg)
 
 struct Unit
 {
-    Unit(const QString &unit, const QString &home, Gittin::Repo *vcs, const config::Unit &config)
-        : m_home(home)
-        , m_unit(unit)
-        , m_root(QDir(os::path::join(vcs->path(), unit)))
-        , m_vcs(vcs)
-        , m_config(config)
-    {
-        m_blobs = os::path::join(m_root.absolutePath(), "blobs");
-        m_data = os::path::join(m_root.absolutePath(), "data");
-    }
+    Unit(const QString &unit, const QString &home
+         , Gittin::Repo *vcs, const config::Unit &config);
 
-    void execScript(const QString &action)
-    {
-        QString script = m_config.script();
-        debug::info("SCRIPT>>>", script, "action", action);
-        if (!QFileInfo(script).isExecutable()) {
-            error::raise({{"msg", "Should be executable"}, {"script", script}});
-        }
-        QStringList args = { "--action", action,
-                             "--name", m_unit,
-                             "--dir", QDir(m_data).absolutePath(),
-                             "--bin-dir", QDir(m_blobs).absolutePath(),
-                             "--home-dir", m_home };
-
-        subprocess::Process ps;
-        ps.start(script, args);
-        ps.wait(-1);
-
-        debug::Level level = ps.rc() ? debug::Level::Error : debug::Level::Info;
-
-        debug::print_ge(level, "RC", ps.rc());
-        debug::print_ge(level, "STDOUT", ps.stdout());
-        debug::print_ge(level, "<<STDOUT");
-        debug::print_ge(level, "STDERR", ps.stderr());
-        debug::print_ge(level, "<<STDERR");
-        debug::print_ge(level, "<<<SCRIPT", script, "action", action, "is done");
-        if (ps.rc()) {
-            QString msg = "Backup script " + script + " exited with rc=" + ps.rc();
-            error::raise({{"msg", msg}, {"stdout", ps.stdout()}, {"stderr", ps.stderr()}});
-        }
-    }
-
-    void linkBlob(const QString &file)
-    {
-        QString blobStorage = os::path::join(m_vcs->path(), ".git", "blobs");
-        QByteArray sha = m_vcs->hashObject(file);
-        QString blobDir = os::path::join(blobStorage, sha.left(2));
-        QString blobFName = os::path::join(blobDir, sha.mid(2));
-        QString linkFName = os::path::join(m_vcs->path(), file);
-
-        if (!os::path::exists(blobDir)) {
-            os::mkdir(blobDir);
-        }
-
-        QDateTime origTime = os::lastModified(linkFName);
-        if (os::path::isFile(blobFName)) {
-            os::unlink(linkFName);
-        } else {
-            os::rename(linkFName, blobFName);
-        }
-        os::setLastModified(blobFName, origTime);
-        QString target = os::path::relative(blobFName, os::path::dirName(linkFName));
-        os::symlink(target, linkFName);
-        if (!os::path::isSymLink(linkFName) && os::path::isFile(blobFName)) {
-            error::raise({{"msg", "Blob should be symlinked"},
-                          {"link", linkFName}, {"target", target}});
-        }
-        m_vcs->add(file);
-    }
-
-    void backup()
-    {
-        QString name = m_config.name();
-
-        // cleanup directories for data and blobs in
-        // the repository
-        os::rmtree(m_blobs);
-        os::rmtree(m_data);
-        os::mkdir(m_root.absolutePath());
-        os::mkdir(m_blobs);
-        os::mkdir(m_data);
-
-        execScript("export");
-
-        Gittin::RepoStatus status = m_vcs->status(os::path::join(m_root.path(), "blobs"));
-        for (const Gittin::RepoStatus::File &file: status.files()) {
-            if (file.index == ' ' && file.workTree == 'D') {
-                m_vcs->rm(file.file);
-                continue;
-            }
-
-            QString fname = QFileInfo(file.file).fileName();
-            QString prefix = config::prefix;
-            if (fname.length() >= prefix.length() && fname.startsWith(prefix)) {
-                m_vcs->add(file.file);
-                continue;
-            }
-
-            linkBlob(file.file);
-        }
-
-        if (m_vcs->status(m_root.path()).isClean()) {
-            debug::info("No changes for the unit ", name);
-            // but still commit to track user's intention to backup unit
-        } else {
-            // add all only in data dir to avoid blobs to get into git
-            // objects storage
-            m_vcs->add(os::path::join(m_root.path(), "data"), Gittin::AddOptions::All);
-            status = m_vcs->status(m_root.path());
-            if (status.hasDirtyFiles()) {
-                error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
-            }
-        }
-        commitEvenIfClean(*m_vcs, Snapshot(m_vcs, name).tag().name());
-        status = m_vcs->status(m_root.path());
-        if (!status.isClean()) {
-            error::raise({{"msg", "Not fully commited"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
-        }
-    }
-
-    void restore()
-    {
-        if (!m_root.exists()) {
-            error::raise({{"reason", "absent"}, {"name", m_unit}});
-        }
-        execScript("import");
-    }
+    void execScript(const QString &action);
+    void linkBlob(const QString &file);
+    void backup();
+    void restore();
 
     QString m_home;
     QString m_unit;
@@ -840,9 +720,9 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
         Unit u(unit, home, &m_vcs, config().units().value(unit));
         u.backup();
         callback(unit, "ok");
-    } catch (error::Error err) {
-        debug::error(err.what(), "\n");
-        callback(unit, err.m.contains("reason") ? err.m.value("reason").toString() : "fail");
+    } catch (error::Error const &err) {
+        debug::error("Unit backup error:", err.m);
+        callback(unit, str(err.m.value("reason", "fail")));
         m_vcs.clean(CleanOptions::Force | CleanOptions::RemoveDirectories | CleanOptions::IgnoreIgnores, unit);
         m_vcs.reset(ResetOptions::Hard, head.sha());
         return false;
@@ -894,5 +774,136 @@ Lock Vault::lock() const
     }
     return handle;
 }
+
+
+Unit::Unit(const QString &unit, const QString &home
+           , Gittin::Repo *vcs, const config::Unit &config)
+    : m_home(home)
+    , m_unit(unit)
+    , m_root(QDir(os::path::join(vcs->path(), unit)))
+    , m_vcs(vcs)
+    , m_config(config)
+{
+    m_blobs = os::path::join(m_root.absolutePath(), "blobs");
+    m_data = os::path::join(m_root.absolutePath(), "data");
+}
+
+void Unit::execScript(const QString &action)
+{
+    QString script = m_config.script();
+    debug::info("SCRIPT>>>", script, "action", action);
+    if (!QFileInfo(script).isExecutable()) {
+        error::raise({{"msg", "Should be executable"}, {"script", script}});
+    }
+    QStringList args = { "--action", action,
+                         "--name", m_unit,
+                         "--dir", QDir(m_data).absolutePath(),
+                         "--bin-dir", QDir(m_blobs).absolutePath(),
+                         "--home-dir", m_home };
+
+    subprocess::Process ps;
+    ps.start(script, args);
+    ps.wait(-1);
+
+    debug::Level level = ps.rc() ? debug::Level::Error : debug::Level::Info;
+
+    debug::print_ge(level, "RC", ps.rc());
+    debug::print_ge(level, "STDOUT", ps.stdout());
+    debug::print_ge(level, "<<STDOUT");
+    debug::print_ge(level, "STDERR", ps.stderr());
+    debug::print_ge(level, "<<STDERR");
+    debug::print_ge(level, "<<<SCRIPT", script, "action", action, "is done");
+    if (ps.rc()) {
+        QString msg = "Backup script " + script + " exited with rc=" + ps.rc();
+        error::raise({{"msg", msg}, {"stdout", ps.stdout()}, {"stderr", ps.stderr()}});
+    }
+}
+
+void Unit::linkBlob(const QString &file)
+{
+    QString blobStorage = os::path::join(m_vcs->path(), ".git", "blobs");
+    QByteArray sha = m_vcs->hashObject(file);
+    QString blobDir = os::path::join(blobStorage, sha.left(2));
+    QString blobFName = os::path::join(blobDir, sha.mid(2));
+    QString linkFName = os::path::join(m_vcs->path(), file);
+
+    if (!os::path::exists(blobDir)) {
+        os::mkdir(blobDir);
+    }
+
+    QDateTime origTime = os::lastModified(linkFName);
+    if (os::path::isFile(blobFName)) {
+        os::unlink(linkFName);
+    } else {
+        os::rename(linkFName, blobFName);
+    }
+    os::setLastModified(blobFName, origTime);
+    QString target = os::path::relative(blobFName, os::path::dirName(linkFName));
+    os::symlink(target, linkFName);
+    if (!os::path::isSymLink(linkFName) && os::path::isFile(blobFName)) {
+        error::raise({{"msg", "Blob should be symlinked"},
+                    {"link", linkFName}, {"target", target}});
+    }
+    m_vcs->add(file);
+}
+
+void Unit::backup()
+{
+    QString name = m_config.name();
+
+    // cleanup directories for data and blobs in
+    // the repository
+    os::rmtree(m_blobs);
+    os::rmtree(m_data);
+    os::mkdir(m_root.absolutePath());
+    os::mkdir(m_blobs);
+    os::mkdir(m_data);
+
+    execScript("export");
+
+    Gittin::RepoStatus status = m_vcs->status(os::path::join(m_root.path(), "blobs"));
+    for (const Gittin::RepoStatus::File &file: status.files()) {
+        if (file.index == ' ' && file.workTree == 'D') {
+            m_vcs->rm(file.file);
+            continue;
+        }
+
+        QString fname = QFileInfo(file.file).fileName();
+        QString prefix = config::prefix;
+        if (fname.length() >= prefix.length() && fname.startsWith(prefix)) {
+            m_vcs->add(file.file);
+            continue;
+        }
+
+        linkBlob(file.file);
+    }
+
+    if (m_vcs->status(m_root.path()).isClean()) {
+        debug::info("No changes for the unit ", name);
+        // but still commit to track user's intention to backup unit
+    } else {
+        // add all only in data dir to avoid blobs to get into git
+        // objects storage
+        m_vcs->add(os::path::join(m_root.path(), "data"), Gittin::AddOptions::All);
+        status = m_vcs->status(m_root.path());
+        if (status.hasDirtyFiles()) {
+            error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
+        }
+    }
+    commitEvenIfClean(*m_vcs, Snapshot(m_vcs, name).tag().name());
+    status = m_vcs->status(m_root.path());
+    if (!status.isClean()) {
+        error::raise({{"msg", "Not fully commited"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
+    }
+}
+
+void Unit::restore()
+{
+    if (!m_root.exists()) {
+        error::raise({{"reason", "absent"}, {"name", m_unit}});
+    }
+    execScript("import");
+}
+
 
 }
