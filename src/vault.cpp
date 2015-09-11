@@ -819,10 +819,16 @@ void Unit::execScript(const QString &action)
     }
 }
 
+static const int sha1HashLength = 40;
+
 void Unit::linkBlob(const QString &file)
 {
     QString blobStorage = os::path::join(m_vcs->path(), ".git", "blobs");
     QByteArray sha = m_vcs->hashObject(file);
+    if (sha.length() != sha1HashLength)
+        error::raise({{"msg", "Can't hash object"},
+                    {"file", file}, {"hash", str(sha)}});
+
     QString blobDir = os::path::join(blobStorage, sha.left(2));
     QString blobFName = os::path::join(blobDir, sha.mid(2));
     QString linkFName = os::path::join(m_vcs->path(), file);
