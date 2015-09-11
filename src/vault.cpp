@@ -646,6 +646,17 @@ bool Vault::setState(const QString &state)
     return writeFile(fileName(File::State), state);
 }
 
+// TODO move to the library
+Gittin::Commit commitEvenIfClean(Gittin::Repo &vcs, QString const &msg)
+{
+    auto options = QStringList() << "--allow-empty" << "-m" << msg;
+    vcs.command("commit", options);
+    auto log_opts = QStringList() << "-n1" << "--oneline" << "--no-abbrev-commit";
+    auto commit = vcs.command("log", log_opts)->stdout();
+    // TODO: FIX: object takes unsafe pointer to another object
+    return Gittin::Commit(&vcs, commit.split(' ').first());
+}
+
 struct Unit
 {
     Unit(const QString &unit, const QString &home, Gittin::Repo *vcs, const config::Unit &config)
@@ -761,8 +772,7 @@ struct Unit
                 error::raise({{"msg", "Dirty tree"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
             }
         }
-
-        m_vcs->commit(">" + name);
+        commitEvenIfClean(*m_vcs, Snapshot(m_vcs, name).tag().name());
         status = m_vcs->status(m_root.path());
         if (!status.isClean()) {
             error::raise({{"msg", "Not fully commited"}, {"dir", m_root.path()}/*, {"status", status_dump(status)}*/});
