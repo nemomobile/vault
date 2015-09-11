@@ -1,4 +1,5 @@
 %{!?_with_usersession: %{!?_without_usersession: %define _with_usersession --with-usersession}}
+%{!?cmake_install: %global cmake_install make install DESTDIR=%{buildroot}}
 
 Summary: Incremental backup/restore framework
 Name: vault
@@ -42,13 +43,15 @@ Requires:   %{name} = %{version}-%{release}
 %prep
 %setup -q
 
+%define tools_dir %{_libexecdir}/vault
+
 %build
-%cmake -DVERSION=%{version} %{?_with_multiarch:-DENABLE_MULTIARCH=ON}
+%cmake -DVERSION=%{version} %{?_with_multiarch:-DENABLE_MULTIARCH=ON} -DTOOLS_DIR=%{tools_dir}
 make %{?jobs:-j%jobs}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=%{buildroot}
+%cmake_install
 
 %if 0%{?_with_usersession:1}
 install -D -p -m644 tools/vault-gc.service %{buildroot}%{_userunitdir}/vault-gc.service
@@ -57,15 +60,15 @@ install -D -p -m644 tools/vault-gc.service %{buildroot}%{_userunitdir}/vault-gc.
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%define tools_dir %{_libexecdir}/vault
-
 %files
 %defattr(-,root,root,-)
 %{_libdir}/libvault-core.so*
 %{_libdir}/libvault-transfer.so*
 %{_libdir}/libvault-unit.so*
+%dir %{_libdir}/qt5/qml/NemoMobile/Vault
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
 %{_bindir}/vault
+%dir %{tools_dir}
 %{tools_dir}/*
 %if 0%{?_with_usersession:1}
 %{_userunitdir}/vault-gc.service
@@ -79,6 +82,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files tests
 %defattr(-,root,root,-)
+%dir /opt/tests/vault
 /opt/tests/vault/*
 
 %post

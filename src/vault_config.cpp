@@ -58,7 +58,14 @@ bool Unit::update(const QVariantMap &data)
         if (!src.contains("name") || !src.contains("script")) {
             error::raise({{"msg", "Unit description should contain name and script"}});
         }
-        src["script"] = os::path::canonical(src.value("script").toString());
+        auto script = str(src["script"]);
+        auto script_path = os::path::canonical(script);
+        if (!script_path.isEmpty()) {
+            debug::debug("Full script path:", script_path);
+            script = script_path;
+        }
+        debug::info("Script:", script);
+        src["script"] = script;
     }
     for (auto i = src.begin(); i != src.end(); ++i) {
         if (!m_data.contains(i.key()) || i.value() != m_data.value(i.key())) {
