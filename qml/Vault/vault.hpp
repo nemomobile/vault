@@ -66,6 +66,8 @@ public:
     Q_INVOKABLE void backupUnit(const QString &unit);
     Q_INVOKABLE void tagSnapshot(const QString &message);
 
+    Q_INVOKABLE void restoreUnit(const QString &, const QString &);
+
 signals:
     void rootChanged();
     void backupHomeChanged();

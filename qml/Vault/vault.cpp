@@ -73,9 +73,18 @@ public:
 
     Q_INVOKABLE void backupUnit(const QString &home, const QString &unit)
     {
-        debug::debug("Backup unit", unit);
+        debug::debug(home, "- backup unit", unit);
         auto res = m_vault->backupUnit(home, unit);
         emit progress(Vault::Backup, {{"unit", unit}, {"status", std::get<2>(res)}});
+    }
+
+    Q_INVOKABLE void restoreUnit(const QString &snapshot
+                                 , const QString &home
+                                 , const QString &unit)
+    {
+        debug::debug(home, "- restore unit", unit, "snapshot", snapshot);
+        auto res = m_vault->restoreUnit(snapshot, home, unit);
+        emit progress(Vault::Restore, {{"unit", unit}, {"status", std::get<2>(res)}});
     }
 
     Q_INVOKABLE void tagSnapshot(const QString &message)
@@ -400,6 +409,14 @@ Q_INVOKABLE void Vault::backupUnit(const QString &unit)
 Q_INVOKABLE void Vault::tagSnapshot(const QString &message)
 {
     QMetaObject::invokeMethod(m_worker, "tagSnapshot", Q_ARG(QString, message));
+}
+
+Q_INVOKABLE void Vault::restoreUnit(const QString &snapshot, const QString &unit)
+{
+    QMetaObject::invokeMethod(m_worker, "restoreUnit"
+                              , Q_ARG(QString, snapshot)
+                              , Q_ARG(QString, m_home)
+                              , Q_ARG(QString, unit));
 }
 
 #include "vault.moc"

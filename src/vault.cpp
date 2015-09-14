@@ -579,6 +579,15 @@ Vault::Result Vault::restore(const Snapshot &snapshot, const QString &home, cons
     return res;
 }
 
+void Vault::checkout(const QString &snapshotName)
+{
+    auto name = snapshotName.startsWith('>')
+        ? snapshotName
+        : '>' + snapshotName;
+    Snapshot snapshot(&m_vcs, name);
+    m_vcs.checkout(snapshot.tag(), CheckoutOptions::Force);
+}
+
 QList<Snapshot> Vault::snapshots() const
 {
     auto l = lock();
@@ -696,13 +705,16 @@ struct Unit
 };
 
 /// \return (unit, isOk, reason)
-std::tuple<QString, bool, QString> Vault::backupUnit(const QString &home, const QString &unit)
+std::tuple<QString, bool, QString> Vault::backupUnit
+(const QString &home, const QString &unit)
 {
     auto l = lock();
     QString reason;
     auto onDone = [&reason](const QString &, const QString &result) {
         reason = result;
     };
+    // TODO error check
+    m_vcs.checkout("master");
     auto isOk = backupUnit(home, unit, onDone);
     return std::make_tuple(unit, isOk, reason);
 }
@@ -729,6 +741,21 @@ bool Vault::backupUnit(const QString &home, const QString &unit, const ProgressC
     }
 
     return true;
+}
+
+/// \return (unit, isOk, reason)
+std::tuple<QString, bool, QString> Vault::restoreUnit
+(const QString &snapshot, const QString &home, const QString &unit)
+{
+    auto l = lock();
+    QString reason;
+    auto onDone = [&reason](const QString &, const QString &result) {
+        reason = result;
+    };
+    // TODO error check
+    checkout(snapshot);
+    auto isOk = restoreUnit(home, unit, onDone);
+    return std::make_tuple(unit, isOk, reason);
 }
 
 bool Vault::restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback)
