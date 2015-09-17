@@ -66,8 +66,8 @@ public:
 
     Q_INVOKABLE void reset()
     {
-        debug::debug("Reset storage");
-        m_vault->resetMaster();
+        debug::debug("Reset storage master to the last snapshot");
+        m_vault->resetLastSnapshot();
         emit done(Vault::Maintenance, {{"operation", "reset"}});
     }
 

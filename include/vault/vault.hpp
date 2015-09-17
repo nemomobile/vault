@@ -94,9 +94,10 @@ public:
 
     Lock lock() const;
 
+    void resetLastSnapshot();
+
     std::tuple<QString, bool, QString> backupUnit(const QString &, const QString &);
     QString tagSnapshot(const QString &message);
-    void resetMaster();
 
     std::tuple<QString, bool, QString> restoreUnit
     (const QString &, const QString &, const QString &);
@@ -106,6 +107,7 @@ private:
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     void checkout(const QString &);
+    void resetMaster();
 
     void setup(const QVariantMap *config);
     QString absolutePath(QString const &) const;

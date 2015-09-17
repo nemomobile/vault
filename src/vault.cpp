@@ -430,7 +430,7 @@ Vault::Result Vault::backup(const QString &home, const QStringList &units, const
         qDebug() << "Progress" << name << status;
     };
 
-    resetMaster();
+    resetLastSnapshot();
     Gittin::Commit head = Gittin::Branch(&m_vcs, "master").head();
 
     QStringList usedUnits = units;
@@ -533,6 +533,25 @@ void Vault::resetMaster()
 {
     reset();
     m_vcs.checkout("master", CheckoutOptions::Force);
+}
+
+/**
+ * Reset master branch to the last snapshot commit
+ *
+ * This action should be done before doing backup to avoid inclusion
+ * of any traces/remnants of previous backup tryouts
+ */
+void Vault::resetLastSnapshot()
+{
+    auto l = lock();
+    resetMaster();
+
+    QString lastSnapshot = "anchor";
+    auto snaps = snapshots();
+    if (!snaps.isEmpty())
+        lastSnapshot = snaps.back().tag().name();
+
+    m_vcs.reset(ResetOptions::Hard, lastSnapshot);
 }
 
 Vault::Result Vault::restore(const QString &snapshot, const QString &home, const QStringList &units, const ProgressCallback &callback)
