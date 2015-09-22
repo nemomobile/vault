@@ -7,13 +7,21 @@ src=$(cd $src;pwd)
 [[ -f $src/testing-common-unit.sh ]] || error 88 "Can't include testing-common-unit"
 source $src/testing-common-unit.sh
 
+write_file () {
+    echo "blob: $1: $(date): $(uuidgen)" > $blobs_dir/$1
+}
+
+test_files="b1.txt b2.txt b3.txt"
 if [ "$action" == "export" ]; then
     trace "Exporting"
-    echo "first: $(date): $(uuidgen)" > $data_dir/1.txt \
-         && echo "second: $(date): $(uuidgen)" > $data_dir/2.txt
+    for f in $test_files; do
+        echo "Writing $f"
+        write_file $f || error 68 "Writing of $f is failed"
+    done
 elif [ "$action" == "import" ]; then
     trace "Importing"
-    for src in $data_dir/1.txt $data_dir/2.txt; do
+    for f in $test_files; do
+        src=$blobs_dir/$f
         [ -f $src ] || error 77 "There is no source file $src"
         cp $src $home_dir || error 78 "Can't copy $src to $home_dir"
     done

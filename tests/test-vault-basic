@@ -8,26 +8,9 @@ source $src/testing-common-vault.sh
 
 create_test_dir
 
-test_home=
-storage=
-
-user_name=User1
-email=mail@user
-
-function cd_vault_and_check_it {
-    cd $storage || failed 2 "No vault dir $storage"
-    init_root_and_enter
-    check_is_vault_storage $storage/.git
-    cd .git || failed 4 "No .git"
-    [ "$(git config user.name)" == "$user_name" ] || test_failed 5 "User name is wrong"
-    [ "$(git config user.email)" == "$email" ] || test_failed 5 "User email is wrong"
-    cd .. || test_failed 6 "Can't cd .."
-}
-
 NEXT_TEST "Create empty vault"
 create_test_dirs 1
-vault -V $storage -H $test_home -a init -g user.name=$user_name,user.email=$email \
-    || test_failed 1 "Vault init is failed"
+vault_create
 cd_vault_and_check_it
 
 NEXT_TEST "Create empty vault, long options"
@@ -92,20 +75,37 @@ check_no_unit $unit
 check_unit U1
 check_unit U2
 
-NEXT_TEST "Unit with readable data"
-create_test_dirs text_unit
+unreg_unit U1
+unreg_unit U2
+units_count=$(find $(units_path $storage) -type f -name '*.json' | wc -l)
+[[ $units_count -eq 0 ]] || test_failed 11 "Not all units are unregistered"
+
+
+expected_commit_count=0
+update_check_commit_count() {
+    expected_commit_count=$(expr $expected_commit_count + $1)
+    cd $storage || test_failed 53 "Can't enter $storage"
+    commit_count=$(git log --oneline | wc -l)
+    [[ $commit_count -eq $expected_commit_count ]] ||
+        test_failed 44 "Log should have $expected_commit_count lines, got $commit_count. $2"
+}
+
+NEXT_TEST "Register data unit"
+create_test_dirs test_export_import
 vault -V $storage -H $test_home -a init -g user.name=$user_name,user.email=$email \
     || test_failed 1 "Vault init is failed"
 cd_vault_and_check_it
+update_check_commit_count 1 "After init"
 reg_unit UData GReadable $src/test-unit-text-only
+update_check_commit_count 0 "After registration"
+
+NEXT_TEST "Export data unit"
 vault -a export -M $unit -V $storage -H $test_home ||
     test_failed 40 "Export of the unit $unit is failed"
 [[ $(find $test_home | wc -l) -eq 1 ]] ||
     test_failed 43 "There shouldn't be anything in the test home $test_home"
 
-cd $storage
-[[ $(git log --oneline | wc -l) -eq 3 ]] ||
-    test_failed 44 "Log should have 3 lines"
+update_check_commit_count 2 "After first backup"
 git_tag=$(git describe --tags HEAD)
 [[ "$git_tag" =~ \>.* ]] || test_failed "Tag >... is expected, got $git_tag"
 snap=$(get_snapshots $storage)
@@ -122,6 +122,7 @@ expected_blobs_dir=$(get_blobs_dir $storage $unit)
 [[ $(find $expected_blobs_dir | wc -l) -eq 1 ]] ||
     test_failed 43 "There shouldn't be anything in the dir $expected_blobs_dir"
 
+NEXT_TEST "Import data unit"
 vault -a import -M $unit -V $storage -H $test_home -t $snap ||
     test_failed 40 "Import of the unit $unit is failed"
 
@@ -137,7 +138,7 @@ expected_file=$test_home/2.txt
 NEXT_TEST "Second backup for the same unit"
 vault -a export -M $unit -V $storage -H $test_home ||
     test_failed 40 "Export of the unit $unit is failed"
-
+update_check_commit_count 2 "After 2nd backup"
 
 snap_count=$(get_snapshots $storage | wc -l)
 [[ $snap_count -eq 2 ]] || test_failed 43 "Expected 2 snapshots, got $snap_count"
@@ -166,3 +167,31 @@ ls $test_home > $test_dir/after.txt
 diff $test_dir/before.txt $test_dir/after.txt || test_failed 48 "ls should be the same"
 diff -r $home_copy $test_home > $test_dir/diff.txt || test_failed 49 "1st state should be restored"
 
+NEXT_TEST "Blobs unit registration"
+rm $test_home/* -rf
+reg_unit UBlobs GReadable $src/test-unit-blobs-only
+update_check_commit_count 0 "After UBlobs reg"
+
+NEXT_TEST "Blobs unit export"
+vault -a export -M $unit -V $storage -H $test_home ||
+    test_failed 40 "Export of the unit $unit is failed"
+[[ $(find $test_home | wc -l) -eq 1 ]] ||
+    test_failed 43 "There shouldn't be anything in the test home $test_home"
+
+update_check_commit_count 2 "After blobs export"
+
+NEXT_TEST "Blobs unit import"
+snap=$(get_snapshots $storage | tail -n 1)
+vault -a import -M $unit -V $storage -H $test_home -t $snap ||
+    test_failed 40 "Import of the unit $unit is failed"
+
+expected_files_count=3
+( [[ $(find $test_home | wc -l) -eq $(expr $expected_files_count + 1) ]] \
+      && [[ $(find $test_home -type f | wc -l) -eq $expected_files_count ]]) \
+    || test_failed 43 "There should be 2 restored files in the $test_home"
+
+NEXT_TEST "Both units export"
+vault -a export -V $storage -H $test_home ||
+    test_failed 40 "Export is failed"
+
+update_check_commit_count 3 "After export of 2 units"
