@@ -1,0 +1,424 @@
+#!/bin/bash
+
+initial_dir=$(pwd)
+
+src=$(dirname $0)
+src=$(cd $src;pwd)
+source $src/testing-common-vault.sh
+
+create_test_dir
+
+write_text() {
+    echo -ne "$1" > $2 || test_failed "Can't write '$1' to $2"
+}
+
+write_random() {
+    dd if=/dev/urandom of=$3 bs=$1 count=$2 2>>$test_err
+}
+
+write_sparse_random() {
+    local total=$2
+    local count=(expr $total / 4)
+    local off=(expr $RANDOM / 1000)
+    dd if=/dev/urandom of=$3 bs=$1 count=$2 skip=$off 2>>$test_err
+    off=(expr $off + $RANDOM / 1000)
+    dd if=/dev/urandom of=$3 bs=$1 count=$2 skip=$off 2>>$test_err
+}
+
+make_path() {
+    if [ $# -eq 1 ]; then
+        echo -n $1
+    else
+        local parts=($@)
+        printf '/%s' "${parts[@]%/}"
+    fi
+}
+
+storage_path() {
+    make_path $storage root $@
+}
+
+home_path() {
+    make_path $test_home root $@
+}
+
+vault_sync_opts="NOT_SET_YET"
+vault_sync_opts_aux="NOT_SET_YET"
+vault_current_action="NOT_SET_YET"
+
+vault_sync_assert_action() { [[ $vault_current_action == "import" ]] \
+                                 || [[ $vault_current_action == "import" ]] \
+                                 || test_failed 98 "Unknown action $vault_current_action"; }
+vault_sync_is_import() { vault_sync_assert_action && [[ $vault_current_action == "import" ]]; }
+vault_sync_is_export() { vault_sync_assert_action && [[ $vault_current_action == "export" ]]; }
+
+vault_sync_opts_set() {
+    trace "vault-sync opts: $@"
+    vault_sync_opts="$@"
+}
+
+vault_sync_opts_get() {
+    echo -n "-a $vault_current_action $vault_sync_opts $vault_sync_opts_aux"
+}
+
+get_path() {
+    local home_action=$1
+    local storage_action=$2
+    if [ $vault_current_action == $home_action ]; then
+        home_path ${@:3}
+    elif [ $vault_current_action == $storage_action ]; then
+        storage_path ${@:3}
+    else
+        test_failed 77 "Current action is not set properly"
+    fi
+}
+
+src_path() { get_path "export" "import" $@; }
+dst_path() { get_path "import" "export" $@; }
+
+
+dump_curdir_tree() {
+    local f=
+    for f in $(find | sort); do
+        if [ -d $f ]; then
+            echo "d:$f"
+        elif [ -L $f ]; then
+            echo "l:$f:$(readlink $f)"
+        elif [ -f $f ]; then
+            local fname=$f
+            if [ $(stat -c %s $f) -ge 40 ] && [ $(head -c 8 $f) == "vault://" ]; then
+                f=$(vault-resolve $f)
+            fi
+            if [ "$(head -c 5 $f)" == "text:" ]; then
+                echo "f:$fname:$(cat $f)"
+            else
+                local sz=$(du --apparent-size $f | cut -f 1)
+                local hash=$(git hash-object $f)
+                echo "f:$fname:(app_size=$sz):md5:$hash"
+            fi
+        fi
+    done
+}
+
+acceptable_diff=
+check_home_storage_same_content() {
+    cd $(src_path) && dump_curdir_tree > $test_dir/find_src
+    cd $(dst_path) && dump_curdir_tree > $test_dir/find_dst
+    trace "Diff: ($(src_path), $(dst_path))"
+    diff $test_dir/find_src $test_dir/find_dst >$test_out 2>$test_err
+    if [ $? -ne 0 ]; then
+        sorted_diff=$(cat $test_out | grep '^[<>]' | sort)
+        if [ "$sorted_diff" != "$acceptable_diff" ]; then
+            trace "GOT:$sorted_diff"
+            trace "NEED:$acceptable_diff"
+            test_failed 65 "Trees diff is unexpected"
+        fi
+    fi
+}
+
+create_test_dirs_and_vault() {
+    create_test_dirs_next
+    vault_create
+    cd_vault_and_check_it
+}
+
+prepare_import_="true"
+
+basic_test_cleanup() {
+    prepare_import_="true"
+}
+
+prepare_import_add() {
+    prepare_import_="$prepare_import_ && ($@)"
+}
+
+prepare_import() {
+    trace "Prepare import, eval: $prepare_import_"
+    eval "$prepare_import_"
+    prepare_import_="true"
+}
+
+basic_test_sync_single_no_clean() {
+    local src=$(src_path $1)
+    local dst=$(dst_path)
+    trace "$vault_current_action $src to $dst"
+    trace "Run: vault-sync $(vault_sync_opts_get) $src $dst"
+    vault-sync $(vault_sync_opts_get) $src $dst || test_failed 21 "copy existed with $?"
+    if [ $# -ge 2 ]; then
+        ${@:2}
+    fi
+    check_home_storage_same_content
+}
+
+basic_test_sync_single() {
+    eval "$prepare_export"
+    basic_test_sync_single_no_clean $1
+    local src=$(src_path $1)
+    local dst=$(dst_path)
+    rm $src -rf
+    [[ -e $src ]] && test_failed 25 "Src should not exist"
+
+    vault_current_action="import"
+    src=$(src_path $1)
+    dst=$(dst_path)
+    prepare_import
+    if [ -e $src ]; then
+        basic_test_sync_single_no_clean $1
+    fi
+    rm $src -rf
+    rm $dst/* -rf
+    [[ $(find $dst | wc -l) -eq 1 ]] || test_failed 22 "Dst ($dst) should be empty"
+    vault_current_action="export"
+}
+
+basic_test_src_list=
+basic_test_sync_multiply() {
+    local dst=$(dst_path)
+    trace "$vault_current_action $basic_test_src_list to $dst"
+    local src=
+    for p in $basic_test_src_list; do
+        src="$src $(src_path $p)"
+    done
+    trace "Run: vault-sync $(vault_sync_opts_get) $src $dst"
+    vault-sync $(vault_sync_opts_get) $src $dst \
+        || test_failed 21 "copy existed with $?"
+    if [ $# -ge 1 ]; then
+        ${@}
+    fi
+    check_home_storage_same_content
+    rm $src -rf
+    rm $dst/* -rf
+    [[ $(find $dst | wc -l) -eq 1 ]] || test_failed 22 "Dst ($dst) should be empty"
+}
+
+basic_test_is_one_src=test_failed
+entry_name="THIS_IS_NOT_SET_YET"
+basic_test_sync_if_single() {
+    if $basic_test_is_one_src; then
+        basic_test_sync_single $entry_name ${@:2}
+    else
+        basic_test_src_list="$basic_test_src_list $entry_name"
+    fi
+}
+
+basic_is_expect_empty_dst=test_failed
+
+# functions to create different node types
+
+basic_test_mkdir() {
+    entry_name=$(make_path $@)
+    local node=$(src_path $entry_name)
+    mkdir -p $node
+    $basic_is_expect_empty_dst || mkdir -p $(dst_path $@)
+    prepare_import_add "basic_test_mkdir $@"
+}
+
+basic_test_touch() {
+    entry_name=$(make_path $@)
+    local node=$(src_path $entry_name)
+    touch $node \
+        && ($basic_is_expect_empty_dst || touch $(dst_path $@)) \
+        || test_failed 11 "Trouble touching ($@)"
+}
+
+basic_test_write() {
+    entry_name=$(make_path ${@:2})
+    local node=$(src_path $entry_name)
+    write_text $1 $node \
+        && ($basic_is_expect_empty_dst || write_text "before" $(dst_path ${@:2})) \
+        || test_failed 11 "Trouble writing text ($@)"
+}
+
+basic_test_write_random() {
+    local name=${@:3}
+    entry_name=$(make_path $name)
+    local node=$(src_path $entry_name)
+    write_random $1 $2 $node \
+        && ($basic_is_expect_empty_dst || write_random $1 $2 $(dst_path $name)) \
+        || test_failed 11 "Trouble writing random ($@)"
+}
+
+basic_test_write_sparse() {
+    local name=${@:3}
+    entry_name=$(make_path $name)
+    local node=$(src_path $entry_name)
+    write_sparse_random $1 $2 $node \
+        && ($basic_is_expect_empty_dst || write_random $1 $2 $(dst_path $name)) \
+        || test_failed 11 "Trouble writing random ($@)"
+}
+
+basic_test_ln() {
+    entry_name=$1
+    local node=$(src_path $entry_name)
+    local target_name=$2
+    touch $target_name \
+        && ln -s $target_name $node \
+        && ($basic_is_expect_empty_dst || ln -s "before" $(dst_path $1)) \
+            || test_failed 11 "Trouble symlinking ($@)"
+}
+
+basic_name_dir=n0.d
+basic_name_file=n0.f
+basic_step_dir() {
+    test_step "empty-dir/$1"
+    basic_test_mkdir $basic_name_dir
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+
+basic_step_empty_file() {
+    test_step "empty-file/$1"
+    basic_test_touch $basic_name_file
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+basic_step_1sym_file() {
+    test_step "1-sym-file/$1"
+    basic_test_write "2" n0.1.f
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+
+basic_step_text_file() {
+    test_step "longer-text/$1"
+    basic_test_write "0123456789_0123456789" n0.3.f
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+basic_step_big_file() {
+    test_step "file-greater-chunk-size/$1"
+    basic_test_write_random 1024 1058 n0.4.big.f
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+basic_step_sparse_file() {
+    test_step "file-sparse/$1"
+    basic_test_write_random 1024 71 n0.4.sparse.f
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+basic_step_link_file() {
+    test_step "symlink/$1"
+    basic_test_ln ln1 $test_home/n0.l
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+basic_step_rel_link_file() {
+    test_step "rel-symlink/$1"
+    pushd $(src_path) 1>/dev/null
+    basic_test_ln n0.1.l ../out1
+    popd 1>/dev/null
+    basic_test_sync_if_single $entry_name ${@:2}
+}
+
+basic_step_finalize() {
+    test_step "finalize/$1"
+    if ! $basic_test_is_one_src; then
+        basic_test_sync_multiply ${@:2}
+    fi
+    basic_test_cleanup
+}
+
+basic_steps() {
+    basic_test_src_list=
+    basic_step_dir $@
+    basic_step_empty_file $@
+    basic_step_1sym_file $@
+    basic_step_text_file $@
+    basic_step_big_file $@
+    basic_step_sparse_file $@
+    basic_step_link_file $@
+    basic_step_rel_link_file $@
+    basic_step_finalize $@
+}
+
+test_vault_sync_rm_empty_dir() {
+    if $basic_test_is_one_src; then
+        local src_dir=$(src_path $entry_name)
+        [[ -d $src_dir ]] && rmdir $src_dir
+    else
+        for e in $(find $(src_path)/. -type d -not -name '.' -and -not -name '..'); do
+            [[ -d $e ]] && rmdir $e
+        done
+    fi
+}
+
+basic_test_misc_options() {
+    local condition=$1
+    vault_sync_opts_set "-r"
+    # all steps for single src, recursive copy
+    basic_steps "recursive/$condition"
+
+    # all steps for single src, non-recursive copy
+    vault_sync_opts_set ""
+    if $basic_is_expect_empty_dst; then
+        acceptable_diff="< d:./$basic_name_dir"
+    else
+        acceptable_diff="> d:./$basic_name_dir"
+    fi
+    basic_steps "non-recursive/$condition"
+}
+
+basic_test_cycle() {
+    basic_test_is_one_src=true
+    basic_test_misc_options "single-src/$1"
+    # repeat same steps but for all sources at once
+    basic_test_is_one_src=false
+    basic_test_misc_options "multi-src/$1"
+}
+
+basic_test_cycle_for_normal_and_binary() {
+    basic_is_expect_empty_dst=true
+    basic_test_cycle "empty-dst"
+    basic_is_expect_empty_dst=false
+    basic_test_cycle "existing-dst"
+
+    test_step "recursive/2-level-dir"
+    basic_is_expect_empty_dst=true
+    basic_test_mkdir $basic_name_dir/$basic_name_dir.2
+    vault_sync_opts_set "-r"
+    acceptable_diff=
+    basic_test_sync_single $basic_name_dir
+
+    test_step "non-recursive/2-level-dir"
+    basic_test_mkdir $basic_name_dir/$basic_name_dir.2
+    vault_sync_opts_set ""
+    acceptable_diff=$(cat <<EOF
+< d:./$basic_name_dir
+< d:./$basic_name_dir/$basic_name_dir.2
+EOF
+                   )
+    basic_test_sync_single $basic_name_dir
+
+    test_step "recursive/dir-with-entries/$cycle_step"
+    basic_is_expect_empty_dst=true
+    basic_test_mkdir $basic_name_dir/$basic_name_dir.2
+    basic_test_touch $basic_name_dir/$basic_name_file
+    basic_test_ln $basic_name_dir/l01 ./
+    vault_sync_opts_set "-r"
+    acceptable_diff=
+    basic_test_sync_single $basic_name_dir
+}
+
+NEXT_TEST "Export/Prepare"
+create_test_dirs_and_vault
+vault_current_action="export"
+mkdir -p $(dst_path)
+mkdir -p $(src_path)
+
+NEXT_TEST "Export/Text-mode"
+vault_sync_opts_aux=
+basic_test_cycle_for_normal_and_binary "text-mode"
+
+NEXT_TEST "Export/Blob-mode"
+vault_sync_opts_aux="-b"
+basic_test_cycle_for_normal_and_binary "bin-mode"
+
+exit 0 # TODO
+
+NEXT_TEST "Import/Prepare"
+create_test_dirs_and_vault
+vault_current_action="import"
+mkdir -p $(dst_path)
+mkdir -p $(src_path)
+
+NEXT_TEST "Import/Text-mode"
+vault_sync_opts_aux=
+basic_test_cycle_for_normal_and_binary "text-mode"
+
+NEXT_TEST "Import/Blob-mode"
+vault_sync_opts_aux="-b"
+basic_test_cycle_for_normal_and_binary "bin-mode"
