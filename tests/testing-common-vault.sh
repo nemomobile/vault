@@ -18,9 +18,17 @@ fi
 source $lib_dir/vault-misc
 
 cur_test="Begin"
+test_set_num=0
 function NEXT_TEST {
-    trace $@
+    trace "TEST: $@"
+    test_set_num=$(expr $test_set_num + 1)
     cur_test=$1
+}
+
+cur_test_step=
+function test_step {
+    cur_test_step=$1
+    trace "STEP: $cur_test/$1"
 }
 
 function test_failed {
@@ -29,7 +37,7 @@ function test_failed {
     echo '} stderr {' >&2;
     cat $test_err >&2;
     echo '}' >&2;
-    error $1 "Test: $cur_test." ${@:2}
+    error $1 "Test: $cur_test($cur_test_step)" ${@:2}
 }
 
 function check_is_vault_storage {
@@ -61,4 +69,27 @@ function create_test_dirs {
     storage=$test_dir/$prefix/vault
     mkdir -p $test_home || test_failed 1 "Can't create $test_home"
     mkdir -p $storage || test_failed 1 "Can't create $storage"
+}
+
+
+create_test_dirs_next() {
+    create_test_dirs $test_set_num
+}
+
+user_name=User1
+email=mail@user
+
+function vault_create() {
+    vault -V $storage -H $test_home -a init -g user.name=$user_name,user.email=$email \
+        || test_failed 1 "Vault init is failed"
+}
+
+function cd_vault_and_check_it {
+    cd $storage || failed 2 "No vault dir $storage"
+    init_root_and_enter
+    check_is_vault_storage $storage/.git
+    cd .git || failed 4 "No .git"
+    [ "$(git config user.name)" == "$user_name" ] || test_failed 5 "User name is wrong"
+    [ "$(git config user.email)" == "$email" ] || test_failed 5 "User email is wrong"
+    cd .. || test_failed 6 "Can't cd .."
 }
