@@ -32,7 +32,7 @@ std::basic_ostream<CharT>& operator <<
     return dst;
 }
 
-QStringList strings()
+inline QStringList strings()
 {
     return QStringList();
 }

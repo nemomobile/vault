@@ -14,7 +14,7 @@ testrunner_install(TARGETS unit_all)
 
 MACRO(UNIT_TEST _name)
   set(_exe_name test_${_name})
-  add_executable(${_exe_name} main.cpp ${_name}.cpp tests_common.cpp)
+  add_executable(${_exe_name} main.cpp ${_name}.cpp tests_common.cpp vault_context.cpp)
   target_link_libraries(${_exe_name}
     ${QTAROUND_LIBRARIES}
     ${COR_LIBRARIES}
@@ -34,7 +34,7 @@ MACRO(UNIT_IMPL _name)
   set(_exe_name ${_name}_vault_test)
   set(UNIT_NAME ${_name})
   configure_file(basic_unit.cpp.in  ${CMAKE_CURRENT_SOURCE_DIR}/${_name}_unit.cpp @ONLY)
-  add_executable(${_exe_name} ${_name}_unit.cpp)
+  add_executable(${_exe_name} ${_name}_unit.cpp vault_context.cpp)
   target_link_libraries(${_exe_name} vault-unit)
   qt5_use_modules(${_exe_name} Core)
   testrunner_install(TARGETS ${_exe_name})
