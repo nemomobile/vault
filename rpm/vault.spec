@@ -46,7 +46,7 @@ Requires:   %{name} = %{version}-%{release}
 %define tools_dir %{_libexecdir}/vault
 
 %build
-%cmake -DVERSION=%{version} %{?_with_multiarch:-DENABLE_MULTIARCH=ON} -DTOOLS_DIR=%{tools_dir}
+%cmake -DVERSION=%{version} %{?_with_multiarch:-DENABLE_MULTIARCH=ON} -DTOOLS_DIR=%{tools_dir} -DCMAKE_BUILD_TYPE=Release
 make %{?jobs:-j%jobs}
 
 %install
