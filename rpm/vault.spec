@@ -15,7 +15,7 @@ BuildRequires: pkgconfig(gittin)
 BuildRequires: pkgconfig(tut) >= 0.0.3
 BuildRequires: pkgconfig(Qt5Core) >= 5.2.0
 BuildRequires: pkgconfig(Qt5Qml)
-BuildRequires: pkgconfig(qtaround) >= 0.2.3
+BuildRequires: pkgconfig(qtaround) >= 0.2.6
 %{?_with_usersession:Requires: systemd-user-session-targets}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -65,9 +65,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libvault-core.so*
 %{_libdir}/libvault-transfer.so*
 %{_libdir}/libvault-unit.so*
+%{_libdir}/libvault-sync.so*
 %dir %{_libdir}/qt5/qml/NemoMobile/Vault
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
 %{_bindir}/vault
+%{_bindir}/vault-sync
+%{_bindir}/vault-resolve
 %dir %{tools_dir}
 %{tools_dir}/*
 %if 0%{?_with_usersession:1}
