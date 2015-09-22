@@ -108,6 +108,10 @@ function tree_version_path {
     echo $1/.vault
 }
 
+function vault_tree_version() {
+    [ -d "$root" ] && cat $(tree_version_path $root) || echo 100000
+}
+
 function repo_version_path {
     [ -d $@ ] || error 22 "Call with root"
     echo $1/.git/vault.version
@@ -160,13 +164,13 @@ function init_root {
     test -f "$version_file" || error 44 "Not a vault tree $root?"
 
     tree_version=$(cat $version_file)
-    if [ "x$(vault_tree_version)" == "x" ]; then
+    if [ "x$tree_version" == "x" ]; then
         error 10 "Empty tree version for $root"
     fi
     trace "Tree version $tree_version"
 }
 
-vault_current_tree_version=3
+vault_current_tree_version=4
 
 update_tree_version() {
     ensure_param_count_exit_usage $# 1 "update_tree_version <new_ver>"

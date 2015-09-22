@@ -1,0 +1,15 @@
+#!/bin/bash
+
+src=$1
+nr=$2
+unused=${@:3}
+
+while [ $nr -ne 0 ]; do
+    echo "$unused" | grep ",$nr," 2>/dev/null
+    if [ $? -ne 0 ]; then
+        git-commit-copy $src~$nr
+    else
+        echo "Skip $nr"
+    fi
+    nr=$(expr $nr - 1)
+done

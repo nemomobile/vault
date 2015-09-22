@@ -1,0 +1,34 @@
+#!/bin/bash
+
+src=$(dirname $0)
+src=$(cd $src;pwd)
+source $src/vault-misc $src
+
+init_root_and_enter
+
+show_help() {
+    echo "Usage: $0 <src-branch> <new-branch-name> <after-commit-hook>" >&2
+}
+
+if [ $# -lt 2 ]; then
+    show_help
+    exit 1
+fi
+src_branch=$1
+new_branch=$2
+after_commit_hook=$3
+git reset --hard && git clean -fd || error 10 "Can't reset/clean"
+git checkout -b $new_branch anchor || error 11 "Can't checkout branch"
+
+for h in $(vault_branch_list $src_branch); do
+    git-commit-copy $h || error 16 "Can't copy commit"
+    if [ "x$after_commit_hook" != "x" ]; then
+        $after_commit_hook || error 30 "Error executing hook: $after_commit_hook"
+        git commit --amend --allow-empty --no-edit
+    fi
+    git-vault-tag-copy $h || error 17 "Can't copy tag"
+done
+
+git reset --hard
+git clean -fd
+vault_update_state "branch-copy\nsrc=$src_branch\ndst=$new_branch"

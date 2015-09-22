@@ -1,0 +1,27 @@
+#!/bin/bash
+src=$(dirname $0)
+src=$(cd $src;pwd)
+source $src/vault-misc $src
+
+show_help() {
+    echo "Usage: $0 <commit-id>" >&2
+}
+if [ $# -lt 1 ]; then
+    show_help
+    exit 1
+fi
+
+commit=$1
+dst_branch=$(git rev-parse --abbrev-ref HEAD || error 40 "Can't get current branch")
+
+if [ "x$commit" == "x" ] || [ "x$dst_branch" == "x" ]; then
+    show_help
+    exit 1
+fi
+
+copy_modified_tag() {
+    local tag=$(vault_tag_basename $1)
+    git tag "${dst_branch}/${tag}"
+}
+
+git_commit_tag_for_each $commit copy_modified_tag

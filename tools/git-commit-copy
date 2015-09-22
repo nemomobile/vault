@@ -1,0 +1,41 @@
+#!/bin/bash
+
+show_help() {
+    echo "Usage: $0 <commit-id>" >&2
+}
+
+if [ $# -ne 1 ]; then
+    show_help
+    exit 1
+fi
+
+commit=$1
+
+tree=$(git show -s --format="%T" $commit)
+parents=$(git show -s --format="%P" $commit | cut -d " " -f 2- -s)
+message=$(git show -s --format="%B" $commit)
+echo "Tree: $tree" >&2
+echo "Parents: $parents" >&2
+commit_line="-p $(git rev-parse HEAD)"
+for p in $parents; do
+    commit_line="$commit_line -p $p"
+done
+
+# create commit with the same tree
+echo "EXECUTE: $commit_line -m \"$subject\" $tree"
+copied_commit=$(git commit-tree $commit_line -m "$message" $tree)
+git update-ref HEAD $copied_commit
+git notes copy $commit 2>/dev/null || :
+
+# copy tag
+if [ "x$tag_prefix" != "x" ]; then
+    refs=$(git show -s --format="%D" $commit | sed -e 's| *tag: *|T:|g' | tr "," "\n")
+    for ref in $refs; do
+        if [[ $ref == T:* ]]; then
+            tag=${ref:2}
+            echo "Tag: $tag"
+            git tag ${tag_prefix}/$tag $copied_commit
+        fi
+    done
+fi
+echo $copied_commit

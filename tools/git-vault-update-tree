@@ -1,0 +1,63 @@
+#!/bin/bash
+
+src=$(dirname $0)
+src=$(cd $src;pwd)
+source $src/vault-misc $src
+
+init_root_and_enter
+
+show_help() {
+    echo "Usage: $0 <src-branch>" >&2
+}
+
+if [ $# -ne 1  ]; then
+    show_help
+    exit 1
+fi
+
+if git branch | grep '^migrate$'; then
+    error 19 "Branch migrate exists, delete it first"
+fi
+
+source_branch=$1
+
+(git reset --hard && git clean -fd && git checkout $source_branch) \
+    || error 23 "Can't checkout $source_branch"
+
+if [ $tree_version -ge $vault_current_tree_version ]; then
+    trace "There no need in update"
+    exit 0
+fi
+
+if [ $tree_version -ge $vault_current_tree_version ]; then
+    trace "There no need in update"
+fi
+
+
+renamed_branch=
+
+rollback_changes() {
+    git branch -D migrate
+    for t in $(git tag | grep '^migrate/'); do
+        git tag -d $t
+    done
+    if [ "x$renamed_branch" != "x" ]; then
+        git branch -m $renamed_branch $source_branch
+    fi
+    error $@
+}
+if ! git-vault-copy-branch $source_branch migrate git-vault-update-blobs; then
+    rollback_changes 20 "Can't copy branch $source_branch to migrate"
+fi
+
+trace "Done, renaming branches"
+attic_branch=attic/$(uuidgen)/$source_branch
+git branch -m $source_branch $attic_branch \
+    || rollback_changes 21 "Can't rename $1 to $attic_branch"
+renamed_branch=$attic_branch
+
+git branch -m migrate $1 \
+    || rollback_changes 21 "Can't rename migrate to $renamed_branch"
+
+echo "Renamed successfully"
+vault_update_state "update\nsrc=$renamed_branch\ndst=$source_branch"

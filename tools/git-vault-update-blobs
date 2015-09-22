@@ -1,0 +1,40 @@
+#!/bin/bash
+
+src=`dirname $0`
+src=`cd $src;pwd`
+source $src/vault-misc $src
+
+init_root_and_enter
+
+if [ 0$(vault_tree_version) -le 3 ]; then
+    trace "Blobs storage format should be rewritten in the history"
+else
+    trace "No need in conversion"
+    echo 0
+    exit 0
+fi
+
+git reset --hard || error 17 "Can't reset"
+git checkout
+
+total_count=0
+replace_symlink() {
+    local found_link=$1
+    trace "Process symlink $found_link"
+    local path=$(vault-resolve -c $found_link || error 18 "Can't convert $found_link")
+    if [ "x$path" != "x" ]; then
+        git add $found_link || error 15 "Can't add $found_link"
+        total_count=$(expr $total_count + 1)
+    fi
+}
+
+for name in $(units); do
+    export total_count
+    all_links=$(find $u -type l | while read found_link; do
+                       echo $found_link
+                   done)
+    for l in $all_links; do
+        replace_symlink $l
+    done
+done
+echo "Converted $total_count links"
