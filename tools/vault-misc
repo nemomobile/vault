@@ -50,6 +50,7 @@ function on_failure
         is_failed=true
     fi
 }
+trap on_failure INT
 trap on_failure TERM
 trap on_normal_exit EXIT
 #trap on_failure ERR
@@ -91,10 +92,10 @@ function ensure_param_count_op_exit_usage {
     [ $# -ge 3 ] || error 22 "Call as Num#0 OP Num#1"
     if ! [ $1 $2 $3 ]; then
         local name=`basename $0`
-        echo "Expecting param count: $1 $2 $3" 1>&2;
-        echo "Params was: ${@:5}" 1>&2;
-        echo "Usage: $name $4" 1>&2;
-        exit $1
+        echo "Expecting param count: $1 $2 $3" >&2;
+        echo "Params was: ${@:5}" >&2;
+        echo "Usage: $name $4" >&2;
+        error 1 "Check function call"
     fi
 }
 
@@ -103,18 +104,27 @@ function ensure_param_count_exit_usage {
 }
 
 function tree_version_path {
-    [ $@ ] || error 22 "Call with root"
+    [ -d $@ ] || error 22 "Call with root"
     echo $1/.vault
 }
 
 function repo_version_path {
-    [ $@ ] || error 22 "Call with root"
+    [ -d $@ ] || error 22 "Call with root"
     echo $1/.git/vault.version
 }
 
 function units_path {
-    [ $@ ] || error 22 "Call with root"
+    [ -d $@ ] || error 22 "Call with root"
     echo $1/.units/
+}
+
+function tree_state_path {
+    [ -d $@ ] || error 22 "Call with root"
+    echo $1/.vault.state
+}
+
+vault_update_state() {
+    echo -e $@ >$(tree_state_path $root)
 }
 
 function get_root {
@@ -150,10 +160,18 @@ function init_root {
     test -f "$version_file" || error 44 "Not a vault tree $root?"
 
     tree_version=$(cat $version_file)
-    if [ "x$tree_version" == "x" ]; then
+    if [ "x$(vault_tree_version)" == "x" ]; then
         error 10 "Empty tree version for $root"
     fi
     trace "Tree version $tree_version"
+}
+
+vault_current_tree_version=3
+
+update_tree_version() {
+    ensure_param_count_exit_usage $# 1 "update_tree_version <new_ver>"
+    [[ -f $version_file ]] || error 44 "Need version file set"
+    echo "$1" > $version_file
 }
 
 function init_root_and_enter {
@@ -235,6 +253,32 @@ function get_blobs_dir {
 function get_snapshots {
     ensure_param_count_exit_usage $# 1 "get_snapshots <repo>"
     vault -a list-snapshots -V $1
+}
+
+function git_commit_tag_for_each {
+    ensure_param_count_exit_usage $# 2 "commit_tag_for_each <commit> <hook>"
+    commit=$1
+    hook=$2
+    refs=$(git show -s --format="%D" $commit | sed -e 's| *tag: *|T:|g' | tr "," "\n")
+    for ref in $refs; do
+        if [[ $ref == T:* ]]; then
+            tag=${ref:2}
+            $hook $tag
+        fi
+    done
+}
+function vault_branch_list() {
+    ensure_param_count_exit_usage $# 1 "vault_branch_list <branch>"
+    git log --format=%H anchor..$1 | tac
+}
+
+vault_tag_basename() {
+    ensure_param_count_exit_usage $# 1 "vault_tag_base <tag>"
+    local tag=$1
+    if [[ $tag =~ ^.*/ ]]; then
+        tag=$(expr "$tag" : '.*/\(.*\)')
+    fi
+    echo $tag
 }
 
 vault_misc=1

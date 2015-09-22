@@ -63,7 +63,7 @@ esac
 
 trace "Tools: sync=$sync_tool, cp=$cp_tool"
 
-if [ $tree_version -ge 3 ]; then
+if [ $(vault_tree_version) -ge 3 ]; then
     trace "Sync .git/info"
 fi
 
