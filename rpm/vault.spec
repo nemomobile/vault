@@ -25,10 +25,24 @@ Incremental backup/restore framework
 
 %{?_with_usersession:%define _userunitdir %{_libdir}/systemd/user/}
 
+%package -n libvault
+Group: System/Libraries
+Summary: Vault backup framework libraries
+Provides: %{name} = %{version}-%{release}
+Obsoletes: %{name} < %{version}-%{release}
+%description -n libvault
+%summary
+
+%package qt5-declarative
+Group: System/Libraries
+Summary: Vault backup framework QML plugin
+%description qt5-declarative
+%summary
+
 %package devel
 Summary: vault headers etc.
 Group: Development/Libraries
-Requires: %{name} = %{version}-%{release}
+Requires: libvault = %{version}
 %description devel
 vault library header files etc.
 
@@ -60,14 +74,18 @@ install -D -p -m644 tools/vault-gc.service %{buildroot}%{_userunitdir}/vault-gc.
 %clean
 rm -rf $RPM_BUILD_ROOT
 
-%files
+%files -n libvault
 %defattr(-,root,root,-)
-%{_libdir}/libvault-core.so*
-%{_libdir}/libvault-transfer.so*
-%{_libdir}/libvault-unit.so*
-%{_libdir}/libvault-sync.so*
+%{_libdir}/libvault-*.so.0
+%{_libdir}/libvault-*.so.%{version}
+
+%files qt5-declarative
+%defattr(-,root,root,-)
 %dir %{_libdir}/qt5/qml/NemoMobile/Vault
 %{_libdir}/qt5/qml/NemoMobile/Vault/*
+
+%files
+%defattr(-,root,root,-)
 %{_bindir}/vault
 %{_bindir}/vault-sync
 %{_bindir}/vault-resolve
@@ -79,6 +97,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files devel
 %defattr(-,root,root,-)
+%{_libdir}/libvault-*.so
 %{_libdir}/pkgconfig/vault-unit.pc
 %dir %{_includedir}/vault
 %{_includedir}/vault/*.hpp
@@ -88,14 +107,15 @@ rm -rf $RPM_BUILD_ROOT
 %dir /opt/tests/vault
 /opt/tests/vault/*
 
+%post -n libvault -p /sbin/ldconfig
+%postun -n libvault -p /sbin/ldconfig
+
 %post
-/sbin/ldconfig || :
 %if 0%{?_with_usersession:1}
     systemctl-user daemon-reload || :
 %endif
 
 %postun
-/sbin/ldconfig || :
 %if 0%{?_with_usersession:1}
     systemctl-user daemon-reload || :
 %endif
