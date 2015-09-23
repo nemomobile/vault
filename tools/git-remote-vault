@@ -1,0 +1,196 @@
+#!/bin/bash
+
+function error {
+    echo "`basename $0`: Error: ${@:1}" 1>&2;
+    exit 1
+}
+
+function log {
+    echo "`basename $0`: ${@}" 1>&2
+}
+
+log "Args: $# is $@"
+alias=$1
+url=$2
+proto=vault
+
+marks_path() {
+echo "$GIT_DIR/$proto/marks"
+}
+
+obj_id() {
+    echo "$1" | md5sum | cut -d ' ' -f1
+}
+
+obj_list_path() {
+    echo "$url/.objects.$1"
+}
+
+head_path() {
+    echo "$url/.head.$1"
+}
+
+print_caps() {
+    echo "push"
+    echo "fetch"
+    echo "refspec refs/heads/*:refs/$proto/$alias/branches/*"
+    echo "*import-marks $(marks_path)"
+    echo "*export-marks $(marks_path)"
+    echo "option"
+    echo
+}
+
+save_option() {
+    log "Option $@"
+    echo "unsupported"
+}
+
+list_refs() {
+    log "List"
+    if ! [[ -f $(marks_path) ]]; then
+        [[ -d $GIT_DIR/$proto ]] || mkdir $GIT_DIR/$proto
+        touch $(marks_path)
+    fi
+    
+    if ! find $url -name '.head.*' -exec cat {} \; ; then
+        echo "? /refs/heads/master"
+        echo "? /refs/notes/commits"
+    fi
+    echo "@refs/heads/master HEAD"
+    #git for-each-ref --format='? %(refname)' 'refs/heads/'
+    #echo "@master master"
+    echo
+}
+
+files_to_remove=
+
+on_normal_exit() {
+    if [ "x$files_to_remove" != "x" ]; then
+        log "removing"
+        rm $files_to_remove
+    fi
+}
+on_failure() {
+    on_normal_exit
+}
+trap on_failure TERM
+trap on_normal_exit EXIT
+
+get_temp_file() {
+    local res=$(mktemp)
+    files_to_remove="$files_to_remove $res"
+    echo $res
+}
+
+get_saved_object() {
+    ls $url | sed -e 's/\.\(tree\|blob\|commit\|note\)$//' | sort
+}
+
+get_ref_objects() {
+    git rev-list --objects $1 | cut -d ' ' -f1 | sort
+}
+
+add_object() {
+    local obj_type=$(git cat-file -t $1)
+    git cat-file $obj_type $1 > $url/$1.$obj_type
+}
+
+do_push() {
+    log "Push $2"
+    local refs=$2
+    local delim=$(expr index "$refs" ':')
+    local from=${refs:0:$(expr delim-1)}
+    local to=${refs:$delim}
+    log "$from -> $to"
+    local obj=$(obj_id $to)
+    if [ "x$from" == "x" ]; then
+        log "delete"
+    else
+        ([[ -d $url ]] || mkdir $url) || error "Can't mkdir $url"
+        if [[ $to =~ notes/.* ]]; then
+            log "Pushing notes"
+            local notes=$(get_temp_file)
+            for n in $(git notes list | cut -d ' ' -f1); do
+                add_object $n
+            done
+            git notes list > $url/.notes
+        else
+            local actual_objects=$(get_temp_file)
+            get_ref_objects $from > $actual_objects
+            local saved_objects=$(get_temp_file)
+            get_saved_object > $saved_objects
+            
+            local obj_type=
+            for i in $(comm -13 $saved_objects $actual_objects); do
+                log "add $i "
+                add_object $i
+            done
+            cat $actual_objects > $(obj_list_path $obj)
+            echo "$(git rev-parse $from) $from" > $(head_path $obj)
+        fi
+    fi
+    tar cf $url/metadata.tar .git/info/exclude .git/vault.version
+    echo
+}
+
+do_fetch() {
+    log "Fetch $@"
+    # TODO ignore params, just fetch everything
+    local obj_type=
+    local obj_id=
+    for i in $(ls $url); do
+        obj_id=$(echo "$i" | cut -d '.' -f1)
+        if ! git cat-file -e $obj_id; then
+            log "add $i $obj_type"
+            obj_type=$(echo "$i" | cut -d '.' -f 2)
+            obj_id=$(git hash-object -t $obj_type -w $url/$i)
+        fi
+    done
+    if [ -f $url/.notes ]; then
+        for n in $(cat $url/.notes | tr ' ' ':'); do
+            local delim=$(expr index "$n" ':')
+            local note=$url/${n:0:$(expr delim-1)}.blob
+            local commit=${n:$delim}
+            if [ -f $note ]; then
+                git notes add -f -F $note $commit
+            else
+                log "Can't find note $note"
+            fi
+        done
+    fi
+x    echo
+}
+
+list_for_push() {
+    log "for push $@"
+    list_refs $@
+}
+while read cmd; do
+    case $cmd in
+        capabilities)
+            log "Caps $cmd"
+            print_caps
+            #break
+            ;;
+        option*)
+            save_option $cmd
+            ;;
+        list)
+            list_refs
+            ;;
+        push*)
+            do_push $cmd
+            ;;
+        fetch*)
+            do_fetch $cmd
+            ;;
+        "list for-push")
+            list_for_push $cmd
+            ;;
+        *)
+            [[ "x$cmd" == "x" ]] && break
+            log "Cmd: $cmd"
+            ;;
+    esac
+done
+
