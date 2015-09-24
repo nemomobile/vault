@@ -204,9 +204,10 @@ public:
                                  , QVariantMap const &context)
     {
         try {
-            if (dataType == Vault::SnapshotUnits) {
+            auto reply = context;
+            switch (dataType) {
+            case Vault::SnapshotUnits: {
                 auto snapshotName = str(context["snapshot"]);
-                auto reply = context;
                 auto unitNames = m_vault->units(snapshotName).toSet();
                 auto allUnits = units();
                 for (auto it = allUnits.begin(); it != allUnits.end(); ++it) {
@@ -215,8 +216,23 @@ public:
                     it.value() = info;
                 }
                 reply["units"] = allUnits;
-                emit data(dataType, reply);
+                break;
             }
+            case Vault::Units: {
+                reply["units"] = units();
+                break;
+            }
+            case Vault::Snapshots: {
+                reply["snapshots"] = snapshots();
+                break;
+            }
+            default: {
+                reply["error"] = "Unsupported data type";
+                emit error(Vault::Data, reply);
+                return;
+            }
+            }
+            emit data(dataType, reply);
         } catch (error::Error const &e) {
             emit error(Vault::Data, e.m);
         } catch (...) {

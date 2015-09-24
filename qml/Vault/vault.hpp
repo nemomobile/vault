@@ -34,7 +34,9 @@ public:
     Q_ENUMS(Operation);
 
     enum DataType {
-        SnapshotUnits
+        SnapshotUnits,
+        Units,
+        Snapshots
     }
     Q_ENUMS(DataType);
 
