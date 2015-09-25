@@ -238,6 +238,10 @@ public:
                 reply["snapshots"] = snapshots();
                 break;
             }
+            case Vault::TotalSize: {
+                reply["totalSize"] = m_vault->getTotalSize();
+                break;
+            }
             default: {
                 reply["error"] = "Unsupported data type";
                 emit error(Vault::Data, reply);

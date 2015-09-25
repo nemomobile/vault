@@ -102,6 +102,8 @@ public:
     std::tuple<QString, bool, QString> restoreUnit
     (const QString &, const QString &, const QString &);
 
+    qlonglong getTotalSize() const;
+
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);

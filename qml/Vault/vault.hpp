@@ -36,7 +36,8 @@ public:
     enum DataType {
         SnapshotUnits,
         Units,
-        Snapshots
+        Snapshots,
+        TotalSize
     }
     Q_ENUMS(DataType);
 

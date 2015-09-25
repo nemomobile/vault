@@ -119,14 +119,21 @@ bool Vault::UnitPath::exists() const
 
 template <typename ... Args>
 std::tuple<int, QString, QString> executeIn
-(QString const &dir, QString const &vaultUtilName, Args && ... args)
+(QString const &dir, QString const &execName, Args && ... args)
 {
     auto p = subprocess::Process();
     p.setWorkingDirectory(dir);
-    p.start(os::path::join(VAULT_LIBEXEC_PATH, vaultUtilName)
-            , {std::forward<Args>(args)...});
+    p.start(execName, {std::forward<Args>(args)...});
     p.wait(-1);
     return std::make_tuple(p.rc(), p.stdout(), p.stderr());
+}
+
+template <typename ... Args>
+std::tuple<int, QString, QString> executeVaultUtilIn
+(QString const &dir, QString const &vaultUtilName, Args && ... args)
+{
+    return executeIn(dir, os::path::join(VAULT_LIBEXEC_PATH, vaultUtilName)
+                     , std::forward<Args>(args)...);
 }
 
 int Vault::execute(const QVariantMap &options)
@@ -210,7 +217,7 @@ int Vault::execute(const QVariantMap &options)
         }
         vault.unregisterUnit(options.value("unit").toString());
     } else if (action == "gc") {
-        auto res = executeIn(vault.root(), "git-vault-gc");
+        auto res = executeVaultUtilIn(vault.root(), "git-vault-gc");
         QTextStream out(stdout, QIODevice::WriteOnly);
         QTextStream err(stderr, QIODevice::WriteOnly);
         out << std::get<1>(res) << endl;
@@ -256,6 +263,17 @@ int Vault::getVersion(File src)
 QString Vault::absolutePath(QString const &relativePath) const
 {
     return os::path::join(m_path, relativePath);
+}
+
+qlonglong Vault::getTotalSize() const
+{
+    auto res = executeIn(root(), "du", "-s");
+    if (!std::get<0>(res)) {
+        auto data = str(std::get<1>(res));
+        return data.left(data.indexOf(' ')).toLongLong();
+    } else {
+        return -1;
+    }
 }
 
 void Vault::setup(const QVariantMap *config)
@@ -644,7 +662,7 @@ QList<QString> Vault::units(QString const & snapshotName) const
 {
     auto l = lock();
     QList<QString> result;
-    auto res = executeIn(root(), "git-vault-snapshot-units", snapshotName);
+    auto res = executeVaultUtilIn(root(), "git-vault-snapshot-units", snapshotName);
     if (!std::get<0>(res)) {
         auto data = str(std::get<1>(res));
         result = data.split("\n", QString::SkipEmptyParts);
