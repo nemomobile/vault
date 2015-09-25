@@ -81,7 +81,8 @@ signals:
     void data(DataType id, const QVariantMap &context);
 
 private:
-    void initWorker(bool reload);
+    enum class Execution { Sync, Async };
+    void initWorker(bool reload, Execution);
 
     QThread m_workerThread;
     Worker *m_worker;

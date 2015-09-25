@@ -49,6 +49,18 @@ public:
         syncConfig();
     }
 
+    Q_INVOKABLE void initNotify(const QString &root)
+    {
+        try {
+            init(root);
+            emit done(Vault::Connect, QVariantMap());
+        } catch (error::Error e) {
+            emit error(Vault::Connect, e.m);
+        } catch (...) {
+            emit error(Vault::Connect, map({{"Exception", "unknown"}}));
+        }
+    }
+
     void syncConfig()
     {
         vault::config::Config *global = vault::config::global();
@@ -293,7 +305,7 @@ void Vault::setBackupHome(const QString &home)
     }
 }
 
-void Vault::initWorker(bool reload)
+void Vault::initWorker(bool reload, Execution execution)
 {
     debug::info((reload ? "re" : ""), "connect to vault");
     debug::debug("Vault in", m_root, ", Home is", m_home);
@@ -308,11 +320,10 @@ void Vault::initWorker(bool reload)
         connect(m_worker, &Worker::done, this, &Vault::done);
         connect(m_worker, &Worker::data, this, &Vault::data);
     }
-    try {
-        m_worker->init(m_root);
-        emit done(Vault::Connect, QVariantMap());
-    } catch (error::Error e) {
-        emit error(Vault::Connect, e.m);
+    if (execution == Execution::Sync) {
+        m_worker->initNotify(m_root);
+    } else {
+        QMetaObject::invokeMethod(m_worker, "initNotify", Q_ARG(QString, m_root));
     }
 }
 
@@ -323,7 +334,7 @@ void Vault::connectVault(bool reconnect)
         return;
     }
 
-    initWorker(reconnect);
+    initWorker(reconnect, Execution::Async);
 }
 
 void Vault::startRestore(const QString &snapshot, const QStringList &units)
@@ -390,7 +401,7 @@ void Vault::registerUnit(const QJSValue &unit, bool global)
         vault::config::global()->set(map);
     } else {
         if (!m_worker) {
-            initWorker(false);
+            initWorker(false, Execution::Sync);
         }
         m_worker->m_vault->registerConfig(map);
     }
