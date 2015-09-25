@@ -28,14 +28,15 @@ Incremental backup/restore framework
 %package -n libvault
 Group: System/Libraries
 Summary: Vault backup framework libraries
-Provides: %{name} = %{version}-%{release}
-Obsoletes: %{name} < %{version}-%{release}
 %description -n libvault
 %summary
 
 %package qt5-declarative
 Group: System/Libraries
 Summary: Vault backup framework QML plugin
+# declarative part is moved from vault to the separate package
+Obsoletes: vault < 0.3.0
+Requires: libvault = %{version}
 %description qt5-declarative
 %summary
 
@@ -74,9 +75,10 @@ install -D -p -m644 tools/vault-gc.service %{buildroot}%{_userunitdir}/vault-gc.
 %clean
 rm -rf $RPM_BUILD_ROOT
 
+%define lib_so_version 0
 %files -n libvault
 %defattr(-,root,root,-)
-%{_libdir}/libvault-*.so.0
+%{_libdir}/libvault-*.so.%{lib_so_version}
 %{_libdir}/libvault-*.so.%{version}
 
 %files qt5-declarative

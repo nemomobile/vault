@@ -1,5 +1,7 @@
 pkg_check_modules(GITTIN gittin REQUIRED)
 
+set(VAULT_SOVERSION 0)
+
 include_directories(
   ${GITTIN_INCLUDE_DIRS}
 )
@@ -18,7 +20,7 @@ target_link_libraries(vault-core
   ${GITTIN_LIBRARIES}
 )
 set_target_properties(vault-core PROPERTIES
-  SOVERSION 0
+  SOVERSION ${VAULT_SOVERSION}
   VERSION ${VERSION}
   )
 install(TARGETS vault-core DESTINATION ${DST_LIB})
@@ -33,7 +35,8 @@ qt5_use_modules(vault-unit Core)
 target_link_libraries(vault-unit
   ${COR_LIBRARIES}
   ${QTAROUND_LIBRARIES}
-)
+  )
+# TODO transform soversion to the x.x.x
 set_target_properties(vault-unit PROPERTIES
   SOVERSION 0
   VERSION ${VERSION}
@@ -48,7 +51,7 @@ target_link_libraries(vault-transfer
   vault-core
 )
 set_target_properties(vault-transfer PROPERTIES
-  SOVERSION 0
+  SOVERSION ${VAULT_SOVERSION}
   VERSION ${VERSION}
   )
 install(TARGETS vault-transfer DESTINATION ${DST_LIB})
@@ -60,7 +63,7 @@ add_library(vault-sync
   vault-util.cpp
   )
 set_target_properties(vault-sync PROPERTIES
-  SOVERSION 0
+  SOVERSION ${VAULT_SOVERSION}
   VERSION ${VERSION}
   )
 qt5_use_modules(vault-sync Core)
