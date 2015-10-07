@@ -1,0 +1,307 @@
+#!/bin/bash
+
+if [ "x$VAULT_LIB_DIR" == "x" ]; then
+    echo "Set VAULT_LIB_DIR" >&2
+    exit 1
+fi
+
+src=$(dirname $0)
+src=$(cd $src;pwd)
+source $VAULT_LIB_DIR/vault-misc $src
+
+obj_id() {
+    echo "$1" | sha1sum | cut -d ' ' -f1
+}
+
+head_path() {
+    echo "$url/$1.head"
+}
+
+notes_list_path() {
+    echo "$url/notes"
+}
+
+tags_list_path() {
+    echo "$url/tags"
+}
+
+print_heads() {
+    if [ -d $url ]; then
+        if [ $trace_level -gt 2 ]; then
+            trace 3 "$(find $url -name '*.head')"
+            trace 3 "$(find $url -name '*.head' | xargs cat)"
+        fi
+        find $url -name '*.head' | xargs cat
+    else
+        return 1
+    fi
+}
+
+remote_object_path() {
+    ensure_param_count_exit_usage $# 2 "Provide ID and type"
+    echo "$url/$1.$2"
+}
+
+remote_object_list() {
+    ls $url/*.objects
+}
+
+has_commit() {
+    if  [ -f $(remote_object_path $1 "commit") ] \
+            || (find .git -name '*.objects' -print | xargs grep $1); then
+        return 0
+    else
+        return -1
+    fi
+}
+
+remote_head_id() {
+    local head_file=$(head_path $obj)
+    if [ -f $head_file ]; then
+        cat $head_file | cut -d ' ' -f 1
+    else
+        echo
+    fi
+}
+
+list_refs() {
+    trace_if 2  "GIT: Listing refs"
+    # TODO verify head is consistent
+    if ! print_heads; then
+        trace "Not yet initialized"
+        echo "? /refs/heads/master"
+        echo "? /refs/notes/commits"
+    fi
+    echo "@refs/heads/master HEAD"
+    #git for-each-ref --format='? %(refname)' 'refs/heads/'
+    #echo "@master master"
+    echo
+}
+
+vault_tmp_dir=$(mktemp -d)
+
+normal_cleanup="$normal_cleanup; vault_remote_rm_tmp_dir"
+tmp_path() {
+    echo $vault_tmp_dir/$1
+}
+
+vault_remote_rm_tmp_dir() {
+    if [ "x$vault_tmp_dir" != "x" ]; then
+        trace_if 2  "removing $vault_tmp_dir"
+        [[ -d $vault_tmp_dir ]] && rm -rf $vault_tmp_dir
+    fi
+}
+
+if [[ "x$VAULT_LIB_DIR" == "x" ]]; then
+    VAULT_LIB_DIR=$(dirname $0)
+fi
+
+write_saved_objects() {
+    ensure_param_count_exit_usage $# 1 "Provide destination"
+    local dst=$1
+    local obj_re='\.\(tree\|blob\|commit\|note\)$'
+    ls $url | grep "$obj_re" | sed -e "s/$obj_re//" | sort > $dst
+}
+
+write_saved_objects_filenames() {
+    ensure_param_count_exit_usage $# 1 "Provide destination"
+    local dst=$1
+    local obj_re='\.\(tree\|blob\|commit\|note\)$'
+    ls $url | grep "$obj_re" | sort > $dst
+}
+
+apply_remote_object() {
+    ensure_param_count_exit_usage $# 2 "Provide object and function"
+    local obj_file=$1
+    local fn=$2
+    local delim=$(expr index "$obj_file" '.')
+    local obj_id=${obj_file:0:$(expr delim-1)}
+    local obj_type=${obj_file:delim}
+    fn $obj_id $obj_type
+}
+
+apply_remote_tags() {
+    ensure_param_count_exit_usage $# 1 "Provide function"
+    local fn=$1
+    local tags_list=$(tags_list_path)
+    if [ -f $tags_list ]; then
+        local delim
+        local line
+        for line in $(cat $tags_list | tr ' ' ':'); do
+            delim=$(expr index "$line" ':')
+            $fn ${line:0:$(expr delim-1)} ${line:delim}
+        done
+    fi
+}
+
+write_saved_blobs() {
+    ensure_param_count_exit_usage $# 1 "Provide destination"
+    local dst=$1
+    find $url -name '*.vblob' -exec basename {} .vblob \; | sort > $dst
+}
+
+get_local_blob_id() {
+    ensure_param_count_exit_usage $# 1 "Provide blob path"
+    local blob_dir=$(basename $(dirname $1))
+    local blob_file=$(basename $1)
+    echo "$blob_dir$blob_file"
+}
+
+export -f get_local_blob_id
+
+write_actual_blobs() {
+    ensure_param_count_exit_usage $# 1 "Provide destination"
+    local dst=$1
+    find .git/blobs -type f -exec get_local_blob_id {} \; | sort > $dst
+}
+
+vault_blob_remote_path() {
+    echo "$url/$1.vblob"
+}
+
+vault_blob_local_path() {
+    echo ".git/blobs/${1:0:2}/${1:2}"
+}
+
+apply_local_blob() {
+    ensure_param_count_exit_usage $# 2 "Provide id and function"
+    local obj_id=$(verify_obj_id $1)
+    local fn=$2
+    $fn $obj_id .git/blobs/${obj_id:0:2} ${obj_id:2} ${@:3}
+}
+
+vault_object_remote_path() {
+    local obj_id=$1
+    local obj_type=$2
+    echo "$url/$obj_id.$obj_type"
+}
+
+sort_file() {
+    local fname=$1
+    sort -o $fname $fname
+}
+
+save_graph() {
+    trace "Saving graph"
+    local commit_id=$(git rev-parse $1)
+    # TODO hard-coded
+    local skip_blob_re="^Gallery\/"
+    local out_filename_prefix=$vault_tmp_dir/$commit_id
+    git rev-list --objects $commit_id \
+        | gawk -v skip_blob=$skip_blob_re \
+               -v out_prefix=$out_filename_prefix \
+               -f $VAULT_LIB_DIR/git-vault-split-refs.awk 2>/dev/null
+    sort_file $out_filename_prefix.objects
+    local blobs_list=$out_filename_prefix.blobs
+    echo -n > $blobs_list
+    for obj_id in $(cat $out_filename_prefix.blob.objects); do
+        if [ "x$obj_id" != "x" ] && [ "x$(git cat-file -t $obj_id)" == "xblob" ]; then
+            local blob_link=$(git cat-file -p $obj_id)
+            local blob_dir=$(basename $(dirname $blob_link))
+            local blob_file=$(basename $blob_link)
+            local blob_id="$blob_dir$blob_file"
+            if [ $(expr length "$blob_id") -eq 40 ]; then
+                echo $blob_id >> $blobs_list
+            else
+                trace  "$(expr length $blob_id) skip not hash $blob_id for $obj_link"
+            fi
+        fi
+    done
+    sort_file $blobs_list
+    echo $out_filename_prefix
+}
+
+push_vault_blob() {
+    trace_if 3  "Push blob $1"
+    local blob_id=$1
+    local dst=$(vault_blob_remote_path $blob_id)
+    if ! [ -f $dst ]; then
+        local src=$(vault_blob_local_path $blob_id)
+        [ -f $src ] && cp $src $dst || error 11 "No vault blob $src"
+    fi
+}
+
+rm_remote_blob() {
+    trace_if 3  "Remove blob $1"
+    local obj_id=$(verify_obj_id $1)
+    rm -f $url/$obj_id.vblob
+}
+
+fetch_blob_create_dir() {
+    local blob_id=$1
+    local blob_dir=$2
+    local dst=$2/$3
+    local src=$(vault_blob_remote_path $blob_id)
+    [ -f $src ] || error 30 "No remote blob $src"
+    if [ -d $blob_dir ]; then
+        if [ -f $dst ]; then
+            trace_if 3 "Skip, already exist: $blob_id"
+            return 0
+        fi
+    else
+        mkdir -p $blob_dir
+    fi
+    cp $src $dst || error 12 "Can't copy $src $dst"
+}
+
+fetch_vault_blob() {
+    apply_local_blob $1 fetch_blob_create_dir
+}
+
+rm_vault_blob() {
+    ensure_param_count_exit_usage $# 1 "Provide blob id"
+    local blob_id=$1
+    local target=$(vault_blob_local_path $blob_id)
+    [ -f $target ] && rm -f $target
+}
+
+push_object() {
+    trace_if 3 "Push $1"
+    local obj_type=$(git cat-file -t $1)
+    [ "x$obj_type" == "x" ] && error 20 "Can't get obj_type from $1" 
+    local dst=$(vault_object_remote_path $1 $obj_type)
+    trace_if 3  "push $1 ($obj_type) -> $dst"
+    [ -f $dst ] || (git cat-file $obj_type $1 > $dst)
+}
+
+verify_obj_id() {
+    [ $(expr length "$1") -eq 40 ] || error 13 "Wrong obj ID: $1"
+    echo $1
+}
+
+rm_remote_object() {
+    trace_if 3 "Remove $1"
+    local obj_id=$(verify_obj_id $1)
+    rm -f $url/$obj_id.*
+}
+
+fetch_object() {
+    local obj_type=$(echo "$1" | cut -d '.' -f 2)
+    local obj_id=$(echo "$1" | cut -d '.' -f 1)
+    local dst_id=
+    trace_if 3 "Fetch $obj_id $obj_type"
+    if ! git cat-file -e $obj_id 2>/dev/null; then
+        dst_id=$(git hash-object -t $obj_type -w $url/$1 || error 14 "Can't fetch $1")
+    fi
+}
+
+process_sorted_ranges() {
+    local before=$1
+    local after=$2
+    local on_added=$3
+    local on_removed=$4
+    
+    trace_if 2  "process $before vs $after"
+    for line in $(diff -w $before $after | sed -e 's/\([<>]\) /\1/'); do
+        trace_if 3  "Process line: $line"
+        if [ $(expr length "$line") -gt 1 ]; then
+            local prefix=${line:0:1}
+            local data=${line:1}
+            if [ "x$prefix" == "x>" ]; then
+                $on_added "$data"
+            elif [ "x$prefix" == "x<" ]; then
+                $on_removed "$data"
+            fi
+        fi
+    done
+}

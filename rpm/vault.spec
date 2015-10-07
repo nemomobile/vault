@@ -91,6 +91,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/vault
 %{_bindir}/vault-sync
 %{_bindir}/vault-resolve
+%{_bindir}/git-remote-vault
 %dir %{tools_dir}
 %{tools_dir}/*
 %if 0%{?_with_usersession:1}

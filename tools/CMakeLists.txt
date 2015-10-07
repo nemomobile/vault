@@ -9,10 +9,19 @@ install(
   )
 
 install(
+  PROGRAMS
+  git-remote-vault
+  DESTINATION bin
+  )
+
+install(
   FILES
-  git-vault-rebase-generate.awk git-vault-rebase-prepare.awk
+  git-vault-rebase-generate.awk
+  git-vault-rebase-prepare.awk
+  git-vault-split-refs.awk
   vault-misc
   vault-unit-common
+  git-vault-helpers-remote
   DESTINATION
   ${TOOLS_DIR}
   )
