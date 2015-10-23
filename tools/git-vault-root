@@ -1,6 +1,0 @@
-#!/bin/bash
-
-src=$(dirname $0)
-src=$(cd $src;pwd)
-source $src/vault-misc
-get_root $(pwd)

@@ -1,6 +1,0 @@
-#ifndef _SRC_VAULT_CONFIG_HPP_
-#define _SRC_VAULT_CONFIG_HPP_
-
-#define VAULT_LIBEXEC_PATH "@prefix@/libexec/vault"
-
-#endif // _SRC_VAULT_CONFIG_HPP_

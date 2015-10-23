@@ -1,2 +1,0 @@
-#!/bin/sh
-/usr/bin/vault -H $HOME -V $HOME/.vault -a gc

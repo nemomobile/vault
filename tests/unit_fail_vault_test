@@ -1,4 +1,0 @@
-#!/bin/sh
-echo "SHOULD FAIL"
-echo "FAIL UNIT is FAILED" >&2
-exit 1

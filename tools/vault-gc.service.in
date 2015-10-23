@@ -1,5 +1,0 @@
-[Unit]
-Description=Vault garbage collection
-
-[Service]
-ExecStart=@prefix@/libexec/vault/gc-default
