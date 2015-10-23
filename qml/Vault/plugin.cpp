@@ -17,6 +17,7 @@ public:
     {
         Q_ASSERT(QLatin1String(uri) == QLatin1String("NemoMobile.Vault"));
         qmlRegisterType<Vault>(uri, 1, 0, "Vault");
+        qmlRegisterType<Vault>(uri, 1, 1, "Vault");
     }
 
     void initializeEngine(QQmlEngine *engine, const char *uri)

@@ -28,7 +28,7 @@ class Snapshot
 {
 public:
     explicit Snapshot(const Gittin::Tag &commit);
-
+    explicit Snapshot(Gittin::Repo *repo, const QString &name);
     inline Gittin::Tag tag() const { return m_tag; }
 
     QString name() const;
@@ -73,6 +73,7 @@ public:
     bool clear(const QVariantMap &options);
 
     QList<Snapshot> snapshots() const;
+    QList<QString> units(QString const & snapshotName) const;
     Snapshot snapshot(const QByteArray &tag) const;
     QString notes(const QString &snapshotName);
 
@@ -93,11 +94,19 @@ public:
 
     Lock lock() const;
 
+    void resetLastSnapshot();
+
+    std::tuple<QString, bool, QString> backupUnit(const QString &, const QString &);
+    QString tagSnapshot(const QString &message);
+
+    std::tuple<QString, bool, QString> restoreUnit
+    (const QString &, const QString &, const QString &);
+
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
     bool restoreUnit(const QString &home, const QString &unit, const ProgressCallback &callback);
-    void tagSnapshot(const QString &msg);
+    void checkout(const QString &);
     void resetMaster();
 
     void setup(const QVariantMap *config);

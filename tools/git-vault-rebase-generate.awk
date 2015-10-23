@@ -32,9 +32,9 @@ function prepare_commands() {
         split(commits[name], ids, SUBSEP);
         push_step("data:" name);
         if (length(ids) == 1) {
-            push_command("git cherry-pick " ids[1]);
+            push_command("git cherry-pick --allow-empty " ids[1]);
         } else {
-            cmd="git cherry-pick " ids[1];
+            cmd="git cherry-pick --allow-empty " ids[1];
             for (i = 1; i <= length(ids); i++) {
                 cmd = cmd " && git cherry-pick --no-commit " ids[i] \
                     " && git commit --no-edit --amend --allow-empty";
@@ -57,7 +57,7 @@ function prepare_commands() {
         push_command("git commit --no-edit --amend --allow-empty");
     } else {
         push_step("tag:" tag);
-        push_command("git cherry-pick " id);
+        push_command("git cherry-pick --allow-empty " id);
     }
     tmp_tag = "migrate/" tag
     push_command(sprintf("git tag -f '%s'", tmp_tag));
@@ -77,7 +77,7 @@ $1 == "add" {
 $1 == "old_tag" {
     push_step("old_tag:" $3);
     if (length(old_tags) == 0) {
-        push(old_tags, length(old_tags), "git cherry-pick " $2);
+        push(old_tags, length(old_tags), "git cherry-pick --allow-empty " $2);
     } else {
         push(old_tags, length(old_tags), "git cherry-pick --no-commit " $2);
         push(old_tags, length(old_tags), "git commit --no-edit --amend --allow-empty");
@@ -90,7 +90,7 @@ $1 == "tag" {
 
 $1 == "copy" {
     push_step("copy:" $2);
-    push_command("git cherry-pick " $2);
+    push_command("git cherry-pick --allow-empty " $2);
 }
 
 $1 == "start" {
