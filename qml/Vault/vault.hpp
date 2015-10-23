@@ -29,7 +29,8 @@ public:
         ExportImportPrepare,
         ExportImportExecute,
         Data,
-        Maintenance
+        Maintenance,
+        ExportSnapshot
     }
     Q_ENUMS(Operation);
 
@@ -67,6 +68,7 @@ public:
     Q_INVOKABLE void tagSnapshot(const QString &message);
 
     Q_INVOKABLE void restoreUnit(const QString &, const QString &);
+    Q_INVOKABLE void exportSnapshot(const QString &, const QString &);
 
 signals:
     void rootChanged();

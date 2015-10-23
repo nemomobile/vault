@@ -1,7 +1,7 @@
 configure_file(vault-gc.service.in vault-gc.service @ONLY)
 
 install(
-  PROGRAMS git-vault-gc gc-default git-vault-snapshot-units
+  PROGRAMS git-vault-gc gc-default git-vault-snapshot-units git-vault-export
   DESTINATION ${TOOLS_DIR}
   )
 

@@ -1,0 +1,63 @@
+#!/bin/bash
+
+trace () {
+    echo "`basename $0`: ${@:1}" 1>&2;
+}
+
+error() {
+    trace $@
+    exit 1
+}
+
+[ $# -eq 2 ] || error "Usage: $0 snapshot dst_dir"
+
+SNAP=$1
+DST=$2
+
+if [ "${SNAP:0:1}" != ">" ]; then
+    SNAP=">$SNAP"
+fi
+
+git rev-parse --show-toplevel || error "Not a git dir $(pwd)"
+git rev-parse "$SNAP" >/dev/null || error "There is no snapshot $SNAP"
+[ -d $DST ] || error "There is no destination dir $DST"
+
+# only $DST itself is expected
+COUNT=$(find $DST -maxdepth 1 -not -name '.' | wc -l)
+if [ "x$COUNT" != "x1" ]; then
+    error "Dst dir $DST should be empty, found $COUNT entries"
+fi
+
+trace "Export $SNAP to the $DST"
+
+exit_actions="echo"
+on_exit() {
+    eval "$exit_actions"
+}
+
+trap on_exit INT
+trap on_exit TERM
+trap on_exit EXIT
+
+GIT_DIR=$(pwd)
+(git archive --format=tar "$SNAP" | tar -C $DST -xf -) || \
+    error "Export of $SNAP to the $DST is failed"
+
+LINKS_LIST=$(mktemp)
+[ -f $LINKS_LIST ] || error "Can't create tmp file"
+exit_actions="$exit_actions;rm -f $LINKS_LIST"
+
+find $DST -type l | grep '/blobs/' | while read -r LINK
+do
+    NAME=$(readlink $LINK)
+    # match minimal relative blob ref (path inside the tree is unit/blobs/link)
+    if [[ $NAME =~ \.\./\.\./\.git/blobs/ ]]; then
+        FNAME=$(basename $NAME)
+        DNAME="$GIT_DIR/.git/blobs/$(basename $(dirname $NAME))"
+        [ -d $DNAME ] || error "There is no blob dir $DNAME for $LINK"
+        FNAME="$DNAME/$FNAME"
+        [ -f $FNAME ] || error "There is no blob file $FNAME for $LINK"
+        unlink $LINK || error "Can't unlink $LINK"
+        cp $FNAME $LINK || error "Can't copy $FNAME to $LINK"
+    fi
+done

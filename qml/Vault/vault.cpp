@@ -224,6 +224,19 @@ public:
         }
     }
 
+    Q_INVOKABLE void exportSnapshot(const QString &snapshot, const QString &dstDir)
+    {
+        auto res = m_vault->exportSnapshot(snapshot, dstDir);
+        int rc = std::get<0>(res);
+        auto data = map({{"snapshot", snapshot}, {"dst", dstDir}
+                , {"rc", std::get<0>(res)}, {"stdout", std::get<1>(res)}
+                , {"stderr", std::get<2>(res)}});
+        if (rc)
+            emit done(Vault::ExportSnapshot, data);
+        else
+            emit error(Vault::ExportSnapshot, data);
+    }
+
 signals:
     void progress(Vault::Operation op, const QVariantMap &map);
     void error(Vault::Operation op, const QVariantMap &error);
@@ -417,6 +430,13 @@ Q_INVOKABLE void Vault::restoreUnit(const QString &snapshot, const QString &unit
                               , Q_ARG(QString, snapshot)
                               , Q_ARG(QString, m_home)
                               , Q_ARG(QString, unit));
+}
+
+void Vault::exportSnapshot(const QString &snapshot, const QString &dstDir)
+{
+    QMetaObject::invokeMethod(m_worker, "exportSnapshot"
+                              , Q_ARG(QString, snapshot)
+                              , Q_ARG(QString, dstDir));
 }
 
 #include "vault.moc"

@@ -102,6 +102,7 @@ public:
     std::tuple<QString, bool, QString> restoreUnit
     (const QString &, const QString &, const QString &);
 
+    std::tuple<int, QString, QString> exportSnapshot(QString const &, QString const&);
 private:
     bool setState(const QString &state);
     bool backupUnit(const QString &home, const QString &unit, const ProgressCallback &callback);

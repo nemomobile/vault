@@ -797,6 +797,18 @@ bool Vault::restoreUnit(const QString &home, const QString &unit, const Progress
     return true;
 }
 
+std::tuple<int, QString, QString>
+Vault::exportSnapshot(const QString &snapshot, const QString &dstDir)
+{
+    debug::debug("Export snapshot", snapshot, "to", dstDir);
+    auto l = lock();
+    auto snapshotName = snapshot;
+    if (snapshotName[0] != '>')
+        snapshotName = QString(">") + snapshot;
+
+    return executeIn(root(), "git-vault-export", snapshotName, dstDir);
+}
+
 /**
  * \note thread-unsafe
  */
